@@ -1,0 +1,130 @@
+/* 자동 생성 — 고치지 말 것. design/tokens.json 을 고치고 `npm run tokens` */
+
+@font-face {
+  font-family: "Galmuri11";
+  src: url("/fonts/Galmuri11.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Galmuri11";
+  src: url("/fonts/Galmuri11-Bold.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "GalmuriMono11";
+  src: url("/fonts/GalmuriMono11.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root, [data-theme="light"] {
+  --paper: #ffffff;
+  --paper-sunken: #f5f5f5;
+  --mono: #1b1b1b;
+  --ink: var(--mono);
+  --ink-muted: #5e5e5e;
+  --on-ink: var(--paper);
+  --rule: #dcdcdc;
+  --rule-strong: #8c8c8c;
+  --mark: #c2331b;
+  --focus: var(--ink);
+  --viewer-bg: #111111;
+  --viewer-ink: #ededed;
+  --viewer-muted: #a0a0a0;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --radius-0: 0;
+  --measure: 770px;
+  --page-max: 1200px;
+  --stroke: 2px;
+  --stroke-heavy: 4px;
+  --shadow-pixel: 4px 4px 0 0 #1b1b1b;
+  --shadow-pixel-sm: 2px 2px 0 0 #1b1b1b;
+  --font-display: Galmuri11, system-ui, sans-serif;
+  --font-sans: Galmuri11, system-ui, sans-serif;
+  --font-mono: GalmuriMono11, ui-monospace, monospace;
+  --text-display: 400 44px/55px var(--font-display);
+  --text-title: 400 33px/44px var(--font-display);
+  --text-heading: 700 22px/33px var(--font-display);
+  --text-pixel-label: 700 11px/16px var(--font-display);
+  --text-body: 400 22px/33px var(--font-sans);
+  --text-body-sm: 400 11px/22px var(--font-sans);
+  --text-meta-label: 400 11px/16px var(--font-mono);
+  --text-meta-label-tracking: 0.06em;
+  --text-meta-value: 400 11px/22px var(--font-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+  --paper: #111111;
+  --paper-sunken: #1a1a1a;
+  --mono: #ededed;
+  --ink: var(--mono);
+  --ink-muted: #a0a0a0;
+  --on-ink: var(--paper);
+  --rule: #2e2e2e;
+  --rule-strong: #6b6b6b;
+  --mark: #ff6b4f;
+  --focus: var(--ink);
+  --viewer-bg: #000000;
+  --viewer-ink: #ededed;
+  --viewer-muted: #a0a0a0;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --radius-0: 0;
+  --measure: 770px;
+  --page-max: 1200px;
+  --stroke: 2px;
+  --stroke-heavy: 4px;
+  --shadow-pixel: 4px 4px 0 0 #6b6b6b;
+  --shadow-pixel-sm: 2px 2px 0 0 #6b6b6b;
+  }
+}
+
+[data-theme="dark"] {
+  --paper: #111111;
+  --paper-sunken: #1a1a1a;
+  --mono: #ededed;
+  --ink: var(--mono);
+  --ink-muted: #a0a0a0;
+  --on-ink: var(--paper);
+  --rule: #2e2e2e;
+  --rule-strong: #6b6b6b;
+  --mark: #ff6b4f;
+  --focus: var(--ink);
+  --viewer-bg: #000000;
+  --viewer-ink: #ededed;
+  --viewer-muted: #a0a0a0;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --radius-0: 0;
+  --measure: 770px;
+  --page-max: 1200px;
+  --stroke: 2px;
+  --stroke-heavy: 4px;
+  --shadow-pixel: 4px 4px 0 0 #6b6b6b;
+  --shadow-pixel-sm: 2px 2px 0 0 #6b6b6b;
+}

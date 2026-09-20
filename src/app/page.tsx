@@ -1,69 +1,118 @@
-import Image from "next/image";
+import Link from 'next/link';
+import { createClient } from '@/lib/supabase/server';
 
-export default function Home() {
+// 첫 화면은 로그인 화면이 아니라 아카이브 그 자체다.
+// 손님은 세션 없이 여기에 닿고, RLS 가 공개 자료만 돌려준다.
+export const dynamic = 'force-dynamic';
+
+const TYPE_LABEL: Record<string, string> = {
+  StillImage: '사진',
+  Text: '문서',
+  MovingImage: '영상',
+  Sound: '음성',
+  PhysicalObject: '실물',
+  Event: '사건',
+  Collection: '묶음',
+};
+
+export default async function Home() {
+  const supabase = await createClient();
+
+  const [{ data: items }, { data: stories }, { data: counts }] = await Promise.all([
+    supabase
+      .from('item')
+      .select('id, identifier, title, type, created_edtf, date_verified')
+      .order('submitted_at', { ascending: false })
+      .limit(8),
+    supabase
+      .from('collection')
+      .select('id, title, summary, period_edtf')
+      .eq('kind', 'story')
+      .order('sort_order')
+      .limit(2),
+    supabase.from('item').select('type'),
+  ]);
+
+  const byType = new Map<string, number>();
+  for (const row of counts ?? []) byType.set(row.type, (byType.get(row.type) ?? 0) + 1);
+  const total = counts?.length ?? 0;
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+    <main className="page">
+      <h1 className="display">도당동 아카이브</h1>
+      <p className="measure" style={{ marginTop: 'var(--space-4)' }}>
+        한 집안의 사진·편지·음성·영상과 그에 얽힌 사건을 모아 기술해 둔 곳이다.
+        지금 공개된 자료는 {total}건이다.
+      </p>
+
+      <form action="/search" style={{ marginTop: 'var(--space-8)', display: 'flex', gap: 'var(--space-2)' }}>
+        <input className="field" type="search" name="q" placeholder="자료 찾기" aria-label="자료 찾기" />
+        <button className="button" type="submit">찾기</button>
+      </form>
+
+      <section className="section">
+        <h2 className="section-title">
+          형태분류 <span className="meta-value">전체 {total}건</span>
+        </h2>
+        <ul className="grid">
+          {Object.entries(TYPE_LABEL).map(([code, label]) => (
+            <li key={code} className="card">
+              <Link href={`/search?type=${code}`}>
+                <span className="meta-label">{code}</span>
+                <p className="heading" style={{ marginTop: 'var(--space-2)' }}>{label}</p>
+                <p className="meta-value">{byType.get(code) ?? 0}건</p>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <section className="section">
+        <h2 className="section-title">이야기</h2>
+        {stories?.length ? (
+          <ul className="grid">
+            {stories.map((s) => (
+              <li key={s.id} className="card">
+                <Link href={`/story/${s.id}`}>
+                  <p className="heading">{s.title}</p>
+                  {s.period_edtf && <p className="meta-value">{s.period_edtf}</p>}
+                  {s.summary && <p className="body-sm" style={{ marginTop: 'var(--space-2)' }}>{s.summary}</p>}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="empty">아직 엮은 이야기가 없다.</p>
+        )}
+      </section>
+
+      <section className="section">
+        <h2 className="section-title">최근 등록</h2>
+        {items?.length ? (
+          <ul className="grid">
+            {items.map((item) => (
+              <li key={item.id} className="card">
+                <Link href={`/item/${item.identifier}`}>
+                  <div className="thumb-empty"><span>{item.type}</span></div>
+                  <p className="heading" style={{ marginTop: 'var(--space-3)' }}>{item.title}</p>
+                  <p className="meta-value">
+                    {item.created_edtf ?? '생산일자 기록 없음'}
+                    {item.date_verified && <span className="verified">확인됨</span>}
+                  </p>
+                  <p className="meta-value">{item.identifier}</p>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="empty">아직 공개된 자료가 없다.</p>
+        )}
+      </section>
+
+      <footer className="footer">
+        <span>도당동 아카이브</span>
+        <Link href="/login">관리</Link>
+      </footer>
+    </main>
   );
 }

@@ -1,36 +1,53 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 도당동 아카이브
 
-## Getting Started
+한 집안의 사진·편지·음성·영상과 그에 얽힌 사건을 더블린코어(Dublin Core) 15요소로 기술하고 보여주는 아카이브.
 
-First, run the development server:
+첫 화면은 로그인 화면이 아니라 아카이브 그 자체다. 손님은 로그인 없이 공개 자료를 보고,
+자료를 올리고 고치고 지우는 것은 **관리자 한 사람**만 한다.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## 생김새
+
+흑백 픽셀 아트. 모든 선은 2px, 모서리는 직각, 그림자는 흐림 없는 4px 계단.
+글꼴은 **갈무리**(Galmuri) 하나뿐이고 11px 격자의 배수(11·22·33·44)에서만 쓴다 —
+본문 22px에서 한 픽셀이 정확히 선 두께(`--stroke`)와 같다.
+
+색은 먹색과 종이색 둘로 끝내고, 유일한 색 `mark`는 "증빙으로 확인됨"이라는 사실에만 쓴다.
+사진이 유일한 풍부한 색이 되도록 UI는 무채색을 지킨다.
+
+디자인 시스템(토큰·컴포넌트 34종·브랜드북)은 따로 있고, `design/tokens.json` 이 그 사본이다.
+
+```
+npm run tokens    # design/tokens.json → src/app/tokens.css
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 구조
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+| 경로 | |
+| --- | --- |
+| `/` | 첫 화면 — 로그인 없이 |
+| `/login` | 관리자 전용 |
+| `/admin/items` | 자료 목록 · 등록 · 수정 · 삭제 |
+| `src/proxy.ts` | `/admin/*` 에만 문을 단다. 공개 구간은 미들웨어를 타지 않는다 |
+| `src/lib/edtf.ts` | `1978?` `197X` `1975/1979` 같은 불확실한 날짜를 읽는다 |
+| `supabase/` | 스키마와 권한 — `supabase/README.md` |
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 저장
 
-## Learn More
+- 메타데이터는 **Supabase**(Postgres + Auth + RLS)에.
+- 원본 파일(사진·음성·영상)은 **Google Drive**에. `file.provider = 'gdrive'` 이면
+  `file.storage_path` 가 Drive 의 file id 다. *(연결 예정)*
 
-To learn more about Next.js, take a look at the following resources:
+## 시작하기
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```
+cp .env.example .env.local   # 값을 채운다
+npm install
+npm run dev
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 원칙
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- **기록이 주인공이다.** 픽셀 장식을 더하지 않는다.
+- **메타데이터는 숨기지 않는다.** 상세정보 표를 설명 바로 아래에 펼쳐 보인다.
+- **모르는 것은 모른다고 쓴다.** 추정 날짜는 `?` 와 `~` 로, 빈 요소는 "기록 없음"으로. 값을 지어내지 않는다.
+- **비공개는 조용히 빠진다.** 자물쇠 표시도, "N건 숨김" 안내도 없다 — RLS 가 행 자체를 주지 않는다.

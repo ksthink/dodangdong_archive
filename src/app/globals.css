@@ -1,26 +1,196 @@
-@import "tailwindcss";
+/* 도당동 아카이브 — 바탕 문법
+   흑백 픽셀 아트: 모든 선 2px, 모서리 직각, 그림자는 흐림 없는 계단.
+   값은 tokens.css 에서 온다 — 여기에 색이나 크기를 직접 쓰지 않는다. */
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+*, *::before, *::after { box-sizing: border-box; }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  background: var(--paper);
+  /* 픽셀 글꼴은 안티앨리어싱을 끄고 써야 격자가 산다 */
+  -webkit-font-smoothing: none;
+  -moz-osx-font-smoothing: grayscale;
+  font-smooth: never;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font: var(--text-body);
 }
+
+/* 움직임은 없다. 상태는 전환 없이 한 번에 바뀐다 (픽셀 화면처럼). */
+* { transition: none !important; animation: none !important; }
+
+h1, h2, h3, p, figure, blockquote, dl, dd { margin: 0; }
+ul, ol { margin: 0; padding: 0; list-style: none; }
+img { max-width: 100%; height: auto; display: block; }
+
+a { color: inherit; text-decoration: none; }
+a:hover { text-decoration: underline; text-decoration-thickness: var(--stroke); text-underline-offset: 4px; }
+
+:focus-visible {
+  outline: var(--stroke) solid var(--focus);
+  outline-offset: var(--stroke);
+}
+
+/* 글자 층위 */
+.display { font: var(--text-display); }
+.title   { font: var(--text-title); }
+.heading { font: var(--text-heading); }
+.body-sm { font: var(--text-body-sm); }
+.meta-label {
+  font: var(--text-meta-label);
+  letter-spacing: var(--text-meta-label-tracking);
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+.meta-value { font: var(--text-meta-value); color: var(--ink-muted); }
+.pixel-label { font: var(--text-pixel-label); }
+
+/* 뼈대 */
+.page { max-width: var(--page-max); margin: 0 auto; padding: var(--space-12) var(--space-4) var(--space-16); }
+@media (min-width: 900px) { .page { padding-inline: var(--space-16); } }
+.measure { max-width: var(--measure); }
+.section { margin-top: var(--space-12); }
+.section-title {
+  font: var(--text-heading);
+  padding-top: var(--space-3);
+  border-top: var(--stroke-heavy) solid var(--ink);
+  margin-bottom: var(--space-6);
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--space-2);
+}
+
+/* 카드 격자 — 데스크톱 4열, 태블릿 2열, 모바일 1열 */
+.grid { display: grid; gap: var(--space-6); grid-template-columns: 1fr; }
+@media (min-width: 620px)  { .grid { grid-template-columns: repeat(2, 1fr); } }
+@media (min-width: 1000px) { .grid { grid-template-columns: repeat(4, 1fr); } }
+
+.card {
+  border: var(--stroke) solid var(--ink);
+  background: var(--paper);
+  padding: var(--space-4);
+}
+.card:hover { box-shadow: var(--shadow-pixel); }
+
+/* 빈 자리: 흐린 말 대신 무엇이 없는지 적는다 */
+.empty {
+  border: var(--stroke) solid var(--rule);
+  background: var(--paper-sunken);
+  padding: var(--space-8) var(--space-4);
+  color: var(--ink-muted);
+  font: var(--text-body-sm);
+  text-align: center;
+}
+
+/* 썸네일이 없는 자리: 2px 체커 위에 DCMI 유형 코드 */
+.thumb-empty {
+  aspect-ratio: 4 / 3;
+  background:
+    repeating-conic-gradient(var(--rule) 0% 25%, var(--paper-sunken) 0% 50%) 0 0 / 4px 4px;
+  display: grid;
+  place-items: center;
+}
+.thumb-empty span {
+  font: var(--text-meta-label);
+  letter-spacing: var(--text-meta-label-tracking);
+  border: var(--stroke) solid var(--ink-muted);
+  background: var(--paper);
+  color: var(--ink-muted);
+  padding: 0 var(--space-1);
+}
+
+/* 확인됨 인장 — mark 는 오직 여기에만 */
+.verified {
+  font: var(--text-pixel-label);
+  color: var(--mark);
+  border: var(--stroke) solid var(--mark);
+  padding: 0 var(--space-1);
+  margin-left: var(--space-2);
+  display: inline-block;
+}
+
+/* 눌리는 픽셀 버튼 */
+.button {
+  font: var(--text-body-sm);
+  border: var(--stroke) solid var(--ink);
+  background: var(--ink);
+  color: var(--on-ink);
+  padding: var(--space-3) var(--space-4);
+  box-shadow: var(--shadow-pixel);
+  cursor: pointer;
+  display: inline-block;
+}
+.button:hover { text-decoration: none; }
+.button:active { box-shadow: none; transform: translate(4px, 4px); }
+.button.is-secondary { background: var(--paper); color: var(--ink); border-color: var(--rule-strong); }
+
+.field {
+  font: var(--text-body-sm);
+  border: var(--stroke) solid var(--rule-strong);
+  background: var(--paper-sunken);
+  color: var(--ink);
+  padding: var(--space-3) var(--space-4);
+  width: 100%;
+  border-radius: var(--radius-0);
+}
+
+/* 맨 아래 관리 링크 — 눈에 띌 필요가 없다 */
+.footer {
+  margin-top: var(--space-16);
+  padding-top: var(--space-4);
+  border-top: var(--stroke) solid var(--rule);
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-4);
+  font: var(--text-body-sm);
+  color: var(--ink-muted);
+}
+
+/* 로그인 — 픽셀 창 하나가 화면 가운데 */
+.page.center { display: grid; place-items: center; min-height: 100vh; }
+.window { border: var(--stroke) solid var(--ink); box-shadow: var(--shadow-pixel); width: min(400px, 100%); background: var(--paper); }
+.window-head { font: var(--text-heading); background: var(--ink); color: var(--on-ink); padding: var(--space-3) var(--space-4); }
+.window-body { padding: var(--space-6); display: grid; gap: var(--space-2); }
+.label { font: var(--text-meta-label); letter-spacing: var(--text-meta-label-tracking); text-transform: uppercase; color: var(--ink-muted); margin-top: var(--space-3); }
+.notice { border: var(--stroke-heavy) solid var(--ink); padding: var(--space-3) var(--space-4); font: var(--text-body-sm); font-weight: 700; }
+.button[disabled] { color: var(--ink-muted); border-color: var(--rule); background: var(--paper); box-shadow: none; cursor: default; }
+
+/* 관리 띠 — 관리 화면임을 알리는 유일한 표시 */
+.adminbar { background: var(--ink); color: var(--on-ink); display: flex; align-items: center; gap: var(--space-4); padding: var(--space-3) var(--space-4); font: var(--text-body-sm); }
+.adminbar-mode { background: var(--on-ink); color: var(--ink); padding: 0 var(--space-1); font: var(--text-pixel-label); }
+.adminbar-nav { display: flex; gap: var(--space-4); margin-left: auto; }
+.adminbar-out { background: none; border: var(--stroke) solid var(--on-ink); color: var(--on-ink); font: var(--text-body-sm); padding: 0 var(--space-2); cursor: pointer; }
+
+/* 등록·수정 양식 — 2열, 설명과 주제분류만 두 칸 폭 */
+.form { display: grid; grid-template-columns: 1fr; gap: var(--space-6); margin-top: var(--space-8); }
+@media (min-width: 760px) { .form { grid-template-columns: 1fr 1fr; } .form-field.span2 { grid-column: span 2; } }
+.form-field { display: grid; gap: var(--space-2); align-content: start; }
+.form-field .label { margin-top: 0; }
+.label-code { font: var(--text-meta-label); letter-spacing: var(--text-meta-label-tracking); color: var(--ink-muted); text-transform: none; }
+.help { font: var(--text-body-sm); color: var(--ink-muted); }
+.field.is-mono { font-family: var(--font-mono); }
+.check { display: flex; gap: var(--space-2); align-items: center; font: var(--text-body-sm); }
+.form-foot { grid-column: 1 / -1; border-top: var(--stroke-heavy) solid var(--ink); padding-top: var(--space-4); }
+
+/* 주제분류 — 고른 것은 ink 채움 */
+.chips { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.chip { border: var(--stroke) solid var(--rule-strong); padding: var(--space-1) var(--space-2); font: var(--text-body-sm); display: flex; gap: var(--space-2); align-items: center; cursor: pointer; }
+.chip:has(input:checked) { background: var(--ink); color: var(--on-ink); border-color: var(--ink); }
+
+/* 자료 목록 표 — 행 사이만 rule, 머리 위는 4px */
+.table { width: 100%; border-collapse: collapse; border-top: var(--stroke-heavy) solid var(--ink); }
+.table th { text-align: left; font: var(--text-meta-label); letter-spacing: var(--text-meta-label-tracking); text-transform: uppercase; color: var(--ink-muted); padding: var(--space-3) var(--space-2); }
+.table td { padding: var(--space-3) var(--space-2); border-top: var(--stroke) solid var(--rule); vertical-align: top; }
+.table tbody tr:hover { background: var(--paper-sunken); }
+
+/* 공개 범위 — 색이 아니라 모양으로 */
+.badge { font: var(--text-pixel-label); border: var(--stroke) solid var(--rule-strong); color: var(--ink-muted); padding: 0 var(--space-1); }
+.badge.is-public { border-color: var(--ink); background: var(--ink); color: var(--on-ink); }
+
+/* 지우기 — 색으로 겁주지 않는다. 4px 테두리와 식별자 입력으로 막는다 */
+.danger { border: var(--stroke-heavy) solid var(--ink); padding: var(--space-4); display: grid; gap: var(--space-2); max-width: var(--measure); }
+.button.is-danger { background: var(--paper); color: var(--ink); justify-self: start; }
