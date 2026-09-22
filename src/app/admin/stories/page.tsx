@@ -18,7 +18,7 @@ export default async function StoriesPage({ searchParams }: { searchParams: Prom
   return (
     <main className="page">
       <h1 className="title">이야기</h1>
-      <p className="measure" style={{ marginTop: 'var(--space-4)' }}>
+      <p className="measure body-sm" style={{ marginTop: 'var(--space-4)' }}>
         여러 자료를 엮어 하나의 이야기로 보여 준다. 이야기는 자료를 가리킬 뿐 — 원 자료의 기술은 고치지 않고,
         큐레이터의 말은 블록의 글과 설명글에만 쓴다.
       </p>

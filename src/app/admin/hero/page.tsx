@@ -32,7 +32,7 @@ export default async function HeroSchedulePage({
   return (
     <main className="page">
       <h1 className="title">첫 화면 편성</h1>
-      <p className="measure" style={{ marginTop: 'var(--space-4)' }}>
+      <p className="measure body-sm" style={{ marginTop: 'var(--space-4)' }}>
         첫 화면 히어로의 자리 셋. 자리마다 이야기를 걸거나 자동으로 채우게 둔다.
         편성이 비었거나 기간이 지난 자리는 “오늘, N년 전”이, 그것도 없으면 가장 최근 이야기가 채운다.
         자동으로 넘기지 않는다. 오늘은 <span className="meta-value">{today}</span>(한국 날짜)이다.

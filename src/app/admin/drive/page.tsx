@@ -34,7 +34,7 @@ export default async function DrivePage({
   return (
     <main className="page">
       <h1 className="title">Google Drive</h1>
-      <p className="measure" style={{ marginTop: 'var(--space-4)' }}>
+      <p className="measure body-sm" style={{ marginTop: 'var(--space-4)' }}>
         사진·음성·영상의 원본은 Drive 에 둔다. 아카이브에는 그 파일의 id 와 기술 정보만 남는다.
         이 앱은 <b>스스로 만든 파일에만</b> 닿는다 — 드라이브의 다른 파일은 보지 못한다.
       </p>
