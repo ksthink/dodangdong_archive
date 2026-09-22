@@ -124,6 +124,8 @@ a:hover { text-decoration: underline; text-decoration-thickness: var(--stroke); 
   cursor: pointer;
   display: inline-block;
 }
+/* 버튼 글자는 꺾지 않는다 — 좁은 자리에서 "찾/기"처럼 쪼개지지 않게 */
+.button { white-space: nowrap; }
 .button:hover { text-decoration: none; }
 .button:active { box-shadow: none; transform: translate(4px, 4px); }
 .button.is-secondary { background: var(--paper); color: var(--ink); border-color: var(--rule-strong); }

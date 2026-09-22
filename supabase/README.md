@@ -8,6 +8,12 @@
 | `0002_harden.sql` | 정책이 쓰는 함수를 `private` 스키마로 옮기고 `search_path` 고정 |
 | `0003_seed.sql` | 도당동 본가, 첫 묶음, 주제분류 여섯 갈래, 히어로 자리 셋 |
 | `0004_schema_grants.sql` | `public` 재생성으로 잃은 스키마 권한 복구 |
+| `0005_person_visible_as_creator.sql` | 손님에게 보이는 인물을 공개 자료의 생산자까지 넓힌다 |
+| `0006_story_access.sql` | 이야기(`collection`)에 공개 범위. 비공개로 시작한다 |
+| `0007_block_needs_public_source.sql` | 자료를 가리키는 이야기 블록은 공개된 출처가 있어야 손님에게 보인다 |
+| `0008_relation_both_visible.sql` | 가족 관계는 양쪽 사람이 모두 보일 때만 손님에게 준다 |
+| `0009_file_derived_from.sql` | 썸네일이 어느 원본의 것인지 잇는다(원본 하나에 썸네일 하나) |
+| `0010_transcript_one_per_item.sql` | 자료 하나에 녹취록 하나 |
 
 ## 권한 규칙
 
