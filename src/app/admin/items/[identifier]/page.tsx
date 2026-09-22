@@ -1,9 +1,11 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
-import { updateItem, deleteItem } from '@/lib/actions';
+import { updateItem, deleteItem, detachFile } from '@/lib/actions';
 import ItemForm from '../item-form';
 import DeleteBox from './delete-box';
+import Uploader from './uploader';
+import { isConnected } from '@/lib/google/drive';
 
 export const dynamic = 'force-dynamic';
 
@@ -20,12 +22,16 @@ export default async function EditItemPage({
   const { data: item } = await supabase.from('item').select('*').eq('identifier', identifier).maybeSingle();
   if (!item) notFound();
 
-  const [{ data: bundles }, { data: places }, { data: subjects }, { data: chosen }] = await Promise.all([
-    supabase.from('bundle').select('id, identifier, title').order('identifier'),
-    supabase.from('place').select('id, family_name').order('family_name'),
-    supabase.from('subject').select('id, label').is('parent_id', null).order('sort_order'),
-    supabase.from('item_subject').select('subject_id').eq('item_id', item.id),
-  ]);
+  const [{ data: bundles }, { data: places }, { data: subjects }, { data: chosen }, { data: files }, driveReady] =
+    await Promise.all([
+      supabase.from('bundle').select('id, identifier, title').order('identifier'),
+      supabase.from('place').select('id, family_name').order('family_name'),
+      supabase.from('subject').select('id, label').is('parent_id', null).order('sort_order'),
+      supabase.from('item_subject').select('subject_id').eq('item_id', item.id),
+      supabase.from('file').select('id, original_filename, mime, bytes, width, height, duration_ms')
+        .eq('item_id', item.id).order('created_at'),
+      isConnected(),
+    ]);
 
   const save = updateItem.bind(null, identifier);
   const remove = deleteItem.bind(null, identifier);
@@ -45,6 +51,48 @@ export default async function EditItemPage({
         chosen={chosen?.map((c) => c.subject_id) ?? []}
         submitLabel="고친 것 저장"
       />
+
+      <section className="section">
+        <h2 className="section-title">
+          <span>원본</span>
+          <span className="meta-value">{files?.length ?? 0}개</span>
+        </h2>
+
+        {files?.length ? (
+          <ul className="filelist">
+            {files.map((f) => {
+              const detach = detachFile.bind(null, identifier, f.id);
+              return (
+                <li key={f.id}>
+                  <span>
+                    <a href={`/api/media/${f.id}`} target="_blank" rel="noreferrer">
+                      {f.original_filename ?? '이름 없음'}
+                    </a>
+                    <br />
+                    <span className="meta-value">
+                      {[f.mime, f.bytes ? `${Math.round(f.bytes / 1024 / 1024 * 10) / 10} MB` : null,
+                        f.width && f.height ? `${f.width}×${f.height}` : null,
+                        f.duration_ms ? `${Math.round(f.duration_ms / 1000)}초` : null]
+                        .filter(Boolean).join(' · ')}
+                    </span>
+                  </span>
+                  <form action={detach}>
+                    <button className="button is-secondary" type="submit">떼기</button>
+                  </form>
+                </li>
+              );
+            })}
+          </ul>
+        ) : null}
+
+        {driveReady ? (
+          <div style={{ marginTop: 'var(--space-4)' }}><Uploader itemId={item.id} /></div>
+        ) : (
+          <p className="empty">
+            <Link href="/admin/drive">Google Drive 를 연결</Link>해야 원본을 올릴 수 있다.
+          </p>
+        )}
+      </section>
 
       <section className="section">
         <h2 className="section-title">지우기</h2>

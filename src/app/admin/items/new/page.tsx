@@ -19,9 +19,9 @@ export default async function NewItemPage() {
       <p className="measure" style={{ marginTop: 'var(--space-4)' }}>
         식별자는 저장할 때 DA- 로 자동으로 붙는다. 모르는 것은 비워 두고, 지어내지 않는다.
       </p>
-      <p className="empty" style={{ marginTop: 'var(--space-6)' }}>
-        원본 파일은 아직 올릴 수 없다. 먼저 <Link href="/admin/drive">Google Drive 를 연결</Link>한다.
-        파일이 없는 자료(사건, 아직 디지털화하지 않은 실물)는 지금도 온전히 등록할 수 있다.
+      <p className="measure" style={{ marginTop: 'var(--space-2)', color: 'var(--ink-muted)' }}>
+        원본 파일은 저장한 뒤에 올린다 — 어느 자료에 붙는지 정해져야 하기 때문이다.
+        파일이 없는 자료(사건, 아직 디지털화하지 않은 실물)도 온전한 자료다.
       </p>
 
       {bundles?.length ? (

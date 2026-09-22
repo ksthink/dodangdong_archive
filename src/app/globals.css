@@ -194,3 +194,20 @@ a:hover { text-decoration: underline; text-decoration-thickness: var(--stroke); 
 /* 지우기 — 색으로 겁주지 않는다. 4px 테두리와 식별자 입력으로 막는다 */
 .danger { border: var(--stroke-heavy) solid var(--ink); padding: var(--space-4); display: grid; gap: var(--space-2); max-width: var(--measure); }
 .button.is-danger { background: var(--paper); color: var(--ink); justify-self: start; }
+
+/* 올리기 — 점선 영역, 파일을 끌어오면 굵어진다 */
+.uploader { display: grid; gap: var(--space-4); max-width: var(--measure); }
+.drop {
+  border: var(--stroke) dashed var(--rule-strong);
+  background: var(--paper-sunken);
+  padding: var(--space-8) var(--space-4);
+  display: grid; gap: var(--space-2); justify-items: center; text-align: center;
+  cursor: pointer;
+}
+.drop:hover { border-style: solid; border-width: var(--stroke-heavy); border-color: var(--ink); }
+.joblist { display: grid; gap: var(--space-2); }
+.joblist li { display: flex; justify-content: space-between; gap: var(--space-4); border-top: var(--stroke) solid var(--rule); padding-top: var(--space-2); }
+
+/* 붙어 있는 원본 */
+.filelist { display: grid; gap: var(--space-2); max-width: var(--measure); }
+.filelist li { display: grid; grid-template-columns: 1fr auto; gap: var(--space-4); align-items: center; border: var(--stroke) solid var(--rule); padding: var(--space-3); }

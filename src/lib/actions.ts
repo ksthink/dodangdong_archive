@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { createClient, getAdmin } from '@/lib/supabase/server';
 import { parseEdtf } from '@/lib/edtf';
+import { deleteFile } from '@/lib/google/drive';
 
 /** 쓰기는 관리자만. RLS 가 다시 한 번 막지만, 여기서 먼저 끊는다. */
 async function requireAdmin() {
@@ -103,11 +104,37 @@ export async function deleteItem(identifier: string, form: FormData) {
   const supabase = await createClient();
   const { data: before } = await supabase.from('item').select('*').eq('identifier', identifier).single();
 
+  // 표에서 지우면 file 행은 함께 사라지므로, Drive 파일 id 를 먼저 받아 둔다.
+  const { data: files } = await supabase
+    .from('file').select('storage_path, provider').eq('item_id', before?.id ?? '');
+
   const { error } = await supabase.from('item').delete().eq('identifier', identifier);
   if (error) throw new Error(`자료를 지우지 못했다: ${error.message}`);
+
+  // 원본도 남겨 두지 않는다. 한 파일이 실패해도 나머지는 마저 지운다.
+  for (const f of files ?? []) {
+    if (f.provider === 'gdrive') await deleteFile(f.storage_path).catch(() => {});
+  }
 
   await supabase.from('event_log').insert({ action: 'delete', before });
 
   revalidatePath('/admin/items');
   redirect('/admin/items?지움=' + encodeURIComponent(identifier));
+}
+
+/** 자료에서 원본 하나를 뗀다. Drive 의 파일도 함께 지운다. */
+export async function detachFile(identifier: string, fileId: string) {
+  await requireAdmin();
+  const supabase = await createClient();
+
+  const { data: file } = await supabase
+    .from('file').select('storage_path, provider, item_id').eq('id', fileId).single();
+  if (!file) return;
+
+  const { error } = await supabase.from('file').delete().eq('id', fileId);
+  if (error) throw new Error(`원본을 떼지 못했다: ${error.message}`);
+  if (file.provider === 'gdrive') await deleteFile(file.storage_path).catch(() => {});
+
+  await supabase.from('event_log').insert({ item_id: file.item_id, action: 'file.remove' });
+  revalidatePath(`/admin/items/${identifier}`);
 }

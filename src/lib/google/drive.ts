@@ -89,11 +89,26 @@ async function createFolder(name: string, parent?: string): Promise<string> {
   return (await res.json()).id as string;
 }
 
-/** 아카이브 전체가 들어가는 바깥 폴더. 없으면 만든다. */
+const ROOT_FOLDER_NAME = '도당동 아카이브';
+
+/** 이 앱이 볼 수 있는 폴더 중 같은 이름이 이미 있으면 그것을 쓴다. */
+async function findFolder(name: string): Promise<string | null> {
+  const q = `name = '${name.replace(/'/g, "\\'")}' and mimeType = 'application/vnd.google-apps.folder' and trashed = false`;
+  const res = await drive(`/files?q=${encodeURIComponent(q)}&fields=files(id)&pageSize=1`);
+  const { files } = await res.json();
+  return files?.[0]?.id ?? null;
+}
+
+/**
+ * 아카이브 전체가 들어가는 바깥 폴더.
+ * 전에 만들어 둔 것이 있으면 다시 쓴다 — 같은 이름의 폴더가 둘이 되지 않게.
+ */
 export async function rootFolder(): Promise<string> {
   const saved = await setting(ROOT_FOLDER_KEY);
   if (saved) return saved;
-  const id = await createFolder('도당동 아카이브');
+
+  const existing = await findFolder(ROOT_FOLDER_NAME);
+  const id = existing ?? (await createFolder(ROOT_FOLDER_NAME));
   await putSetting(ROOT_FOLDER_KEY, id);
   return id;
 }
