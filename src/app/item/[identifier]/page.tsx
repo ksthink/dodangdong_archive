@@ -5,6 +5,8 @@ import { createClient } from '@/lib/supabase/server';
 import { TYPE_LABEL, ACCESS_LABEL } from '@/lib/labels';
 import SiteHeader from '@/components/site-header';
 import SiteFooter from '@/components/site-footer';
+import TranscriptView from '@/components/transcript-view';
+import type { Segment } from '@/lib/transcript';
 
 export const dynamic = 'force-dynamic';
 
@@ -29,10 +31,11 @@ export default async function ItemPage({ params }: Params) {
     .maybeSingle();
   if (!item) notFound();
 
-  const [{ data: files }, { data: subjects }, { data: people }] = await Promise.all([
+  const [{ data: files }, { data: subjects }, { data: people }, { data: transcript }] = await Promise.all([
     supabase.from('file').select('id, mime, original_filename, width, height').eq('item_id', item.id).eq('role', 'original').order('created_at'),
     supabase.from('item_subject').select('subject(label)').eq('item_id', item.id),
     supabase.from('item_person').select('role, person(display_name, identifier)').eq('item_id', item.id),
+    supabase.from('transcript').select('segments, reviewed').eq('item_id', item.id).maybeSingle(),
   ]);
 
   // 관계는 하나여도 배열로 올 수 있다. 첫 것만 쓴다.
@@ -76,6 +79,9 @@ export default async function ItemPage({ params }: Params) {
 
   const images = (files ?? []).filter((f) => f.mime?.startsWith('image/'));
   const others = (files ?? []).filter((f) => !f.mime?.startsWith('image/'));
+  // 녹취록의 시각은 첫 음성·영상 원본을 따른다.
+  const player = others.find((f) => f.mime?.startsWith('audio/') || f.mime?.startsWith('video/'));
+  const segments = (transcript?.segments ?? []) as Segment[];
 
   return (
     <>
@@ -108,15 +114,23 @@ export default async function ItemPage({ params }: Params) {
             {others.map((f) => (
               <li key={f.id}>
                 {f.mime?.startsWith('audio/') ? (
-                  <audio controls preload="none" src={`/api/media/${f.id}`} />
+                  <audio id={`media-${f.id}`} controls preload="none" src={`/api/media/${f.id}`} />
                 ) : f.mime?.startsWith('video/') ? (
-                  <video controls preload="none" src={`/api/media/${f.id}`} />
+                  <video id={`media-${f.id}`} controls preload="none" src={`/api/media/${f.id}`} />
                 ) : (
                   <a href={`/api/media/${f.id}`}>{f.original_filename ?? '원본 보기'}</a>
                 )}
               </li>
             ))}
           </ul>
+        )}
+
+        {segments.length > 0 && (
+          <section className="section" id="transcript">
+            <h2 className="section-title"><span>녹취록</span><span className="meta-value">구간 {segments.length}개</span></h2>
+            <TranscriptView segments={segments} playerId={player ? `media-${player.id}` : null}
+              reviewed={!!transcript?.reviewed} />
+          </section>
         )}
 
         <section className="section">

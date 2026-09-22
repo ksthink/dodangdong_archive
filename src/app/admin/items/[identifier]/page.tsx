@@ -2,6 +2,8 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { updateItem, deleteItem, detachFile } from '@/lib/actions';
+import { saveTranscript } from '@/lib/transcript-actions';
+import { parseTranscript } from '@/lib/transcript';
 import ItemForm from '../item-form';
 import DeleteBox from './delete-box';
 import Uploader from './uploader';
@@ -23,7 +25,7 @@ export default async function EditItemPage({
   if (!item) notFound();
 
   const [{ data: bundles }, { data: places }, { data: subjects }, { data: chosen }, { data: files }, driveReady,
-    { data: people }, { data: depicted }] =
+    { data: people }, { data: depicted }, { data: transcript }] =
     await Promise.all([
       supabase.from('bundle').select('id, identifier, title').order('identifier'),
       supabase.from('place').select('id, family_name').order('family_name'),
@@ -34,17 +36,22 @@ export default async function EditItemPage({
       isConnected(),
       supabase.from('person').select('id, display_name').order('born_year', { nullsFirst: false }),
       supabase.from('item_person').select('person_id').eq('item_id', item.id).eq('role', 'depicted'),
+      supabase.from('transcript').select('full_text, reviewed, modified_at').eq('item_id', item.id).maybeSingle(),
     ]);
 
   const save = updateItem.bind(null, identifier);
   const remove = deleteItem.bind(null, identifier);
+  const saveText = saveTranscript.bind(null, identifier);
+  // 녹취록은 음성·영상 자료에 붙는다. 다른 유형이라도 이미 있으면 보여 준다.
+  const hasTranscriptSlot = item.type === 'Sound' || item.type === 'MovingImage' || !!transcript;
+  const segCount = transcript?.full_text ? parseTranscript(transcript.full_text).length : 0;
 
   return (
     <main className="page">
       <p className="meta-value">{identifier}</p>
       <h1 className="title">{item.title}</h1>
 
-      {saved && <p className="notice" role="status">저장했다.</p>}
+      {saved && <p className="notice" role="status">{saved === 'transcript' ? '녹취록을 저장했다.' : '저장했다.'}</p>}
       {error && <p className="notice" role="alert">{error}</p>}
 
       <ItemForm
@@ -109,6 +116,32 @@ export default async function EditItemPage({
           </p>
         )}
       </section>
+
+      {hasTranscriptSlot && (
+        <section className="section" id="transcript">
+          <h2 className="section-title">
+            <span>녹취록</span>
+            <span className="meta-value">{transcript ? `구간 ${segCount}개` : '없음'}</span>
+          </h2>
+          <form action={saveText} className="transcript-form">
+            <label className="label" htmlFor="full_text">원문</label>
+            <textarea className="field transcript-field" id="full_text" name="full_text" rows={14}
+              defaultValue={transcript?.full_text ?? ''}
+              placeholder={'[00:12] 할머니: 그때는 전화가 동네에 한 대뿐이었어.\n[00:31] 나: 그럼 어디서 걸었어요?\n할머니: 이장 댁에서.'} />
+            <ul className="help">
+              <li>한 줄이 한 구간이다. 빈 줄은 건너뛴다.</li>
+              <li>줄 머리의 <span className="meta-value">[분:초]</span> 나 <span className="meta-value">[시:분:초]</span> 는 재생 위치가 된다 — 손님이 누르면 그 자리부터 들린다. 시각만 적은 줄은 바로 다음 줄에 붙는다.</li>
+              <li><span className="meta-value">이름: </span> 처럼 쌍점 뒤에 한 칸을 띄우면 말한 사람이 된다. 둘 다 없어도 된다.</li>
+              <li>원문을 모두 지우고 저장하면 녹취록이 지워진다.</li>
+            </ul>
+            <label className="check">
+              <input type="checkbox" name="reviewed" defaultChecked={transcript?.reviewed ?? false} />
+              원음과 대조해 검토했다
+            </label>
+            <button className="button" type="submit">녹취록 저장</button>
+          </form>
+        </section>
+      )}
 
       <section className="section">
         <h2 className="section-title">지우기</h2>

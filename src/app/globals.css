@@ -418,3 +418,19 @@ ul.help { margin-top: var(--space-2); display: grid; gap: var(--space-1); }
 
 /* hidden 속성은 기본으로 display:none 이지만 위의 display:grid 가 덮어쓴다 — 되돌린다 */
 .hero-slide[hidden] { display: none; }
+
+/* 녹취록 — 왼쪽 시각 칸, 오른쪽 말. 지금 구간은 먹색 왼쪽 선(구술 인용과 같은 문법) */
+.transcript-form { display: grid; gap: var(--space-2); max-width: var(--measure); }
+.transcript-form .button { justify-self: start; margin-top: var(--space-2); }
+.transcript-field { font: var(--text-body-sm); resize: vertical; }
+.transcript-state { max-width: var(--measure); }
+.transcript { display: grid; max-width: var(--measure); margin-top: var(--space-3); border-top: var(--stroke) solid var(--rule); }
+.transcript li { display: grid; grid-template-columns: 96px 1fr; gap: var(--space-3); padding: var(--space-2) var(--space-2) var(--space-2) 0;
+  border-bottom: var(--stroke) solid var(--rule); border-left: var(--stroke-heavy) solid transparent; }
+.transcript li.is-now { border-left-color: var(--ink); background: var(--paper-sunken); }
+.transcript-time { font: var(--text-meta-value); color: var(--ink-muted); justify-self: start; padding: var(--space-1) var(--space-2); margin-left: var(--space-2); }
+button.transcript-time { background: var(--paper); border: var(--stroke) solid var(--rule-strong); color: var(--ink); cursor: pointer; }
+button.transcript-time:hover { border-color: var(--ink); }
+.transcript p { font: var(--text-body); }
+.transcript-speaker { font-weight: 700; margin-right: var(--space-2); }
+@media (max-width: 559px) { .transcript li { grid-template-columns: 1fr; gap: var(--space-1); } }
