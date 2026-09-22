@@ -1,5 +1,6 @@
 import { cookies } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
+import { supabaseKey, supabaseUrl } from './env';
 
 /**
  * 서버에서 쓰는 클라이언트. 손님에게는 세션 쿠키가 없으므로 anon 으로 읽고,
@@ -8,10 +9,7 @@ import { createServerClient } from '@supabase/ssr';
 export async function createClient() {
   const cookieStore = await cookies();
 
-  return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
-    {
+  return createServerClient(supabaseUrl(), supabaseKey(), {
       cookies: {
         getAll: () => cookieStore.getAll(),
         setAll: (list) => {

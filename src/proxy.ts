@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
+import { supabaseKey, supabaseUrl } from '@/lib/supabase/env';
 
 /**
  * 관리 화면에만 문을 단다. 첫 화면을 비롯한 공개 구간은 미들웨어를 타지 않는다
@@ -8,10 +9,7 @@ import { createServerClient } from '@supabase/ssr';
 export async function proxy(request: NextRequest) {
   const response = NextResponse.next({ request });
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
-    {
+  const supabase = createServerClient(supabaseUrl(), supabaseKey(), {
       cookies: {
         getAll: () => request.cookies.getAll(),
         setAll: (list) => {
