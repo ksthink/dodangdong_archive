@@ -29,7 +29,9 @@ export default async function Home() {
       .from('collection')
       .select('id, title, summary, period_edtf')
       .eq('kind', 'story')
+      // /story 와 같은 순서 — 편성 순서, 같으면 최근 것 먼저
       .order('sort_order')
+      .order('created_at', { ascending: false })
       .limit(2),
     supabase.from('item').select('type'),
   ]);

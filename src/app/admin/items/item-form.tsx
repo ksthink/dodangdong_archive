@@ -10,7 +10,7 @@ export default function ItemForm({
   item?: Row;
   bundles: { id: string; identifier: string; title: string }[];
   places: { id: string; family_name: string }[];
-  subjects: { id: string; label: string }[];
+  subjects: { id: string; label: string; parent_id: string | null }[];
   chosen?: string[];
   people?: { id: string; display_name: string }[];
   chosenPeople?: string[];
@@ -71,14 +71,31 @@ export default function ItemForm({
         <input className="field" name="provenance" defaultValue={v('provenance')} />
       </Field>
 
-      <Field label="주제분류" code="dc:subject" span help="여러 개를 고를 수 있다 — 혼례이면서 음식인 사진이 있다.">
-        <div className="chips">
-          {subjects.map((s) => (
-            <label key={s.id} className="chip">
-              <input type="checkbox" name="subject_id" value={s.id} defaultChecked={chosen?.includes(s.id)} />
-              {s.label}
-            </label>
-          ))}
+      <Field label="주제분류" code="dc:subject" span help="여러 개를 고를 수 있다 — 혼례이면서 음식인 사진이 있다. 하위 주제를 고르면 그 아래로 모인다.">
+        {/* 저장할 때 연결을 모두 새로 쓰므로, 걸 수 있는 주제는 하나도 빠짐없이 그려야 한다.
+            (상위만 그리던 때는 저장 한 번에 하위 주제 연결이 사라졌다.) */}
+        <div className="subject-tree">
+          {subjects.filter((s) => !s.parent_id).map((top) => {
+            const children = subjects.filter((s) => s.parent_id === top.id);
+            return (
+              <div key={top.id} className="subject-group">
+                <label className="chip">
+                  <input type="checkbox" name="subject_id" value={top.id} defaultChecked={chosen?.includes(top.id)} />
+                  {top.label}
+                </label>
+                {children.length > 0 && (
+                  <div className="chips subject-children">
+                    {children.map((c) => (
+                      <label key={c.id} className="chip">
+                        <input type="checkbox" name="subject_id" value={c.id} defaultChecked={chosen?.includes(c.id)} />
+                        {c.label}
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       </Field>
 

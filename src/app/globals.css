@@ -338,3 +338,9 @@ ul.help { margin-top: var(--space-2); display: grid; gap: var(--space-1); }
 .tl-dot { display: inline-block; width: 11px; height: 11px; border: var(--stroke) solid var(--ink); margin-right: var(--space-2); vertical-align: -1px; }
 .related { display: grid; gap: var(--space-2); max-width: var(--measure); }
 .related li { border-bottom: var(--stroke) solid var(--rule); padding-bottom: var(--space-2); font: var(--text-body-sm); }
+
+/* 주제분류 나무 — 상위 아래에 하위를 한 단계 들여 쓰고 왼쪽에 rule 선 */
+.subject-tree { display: grid; gap: var(--space-3); }
+.subject-group { display: grid; gap: var(--space-2); justify-items: start; }
+.subject-children { padding-left: var(--space-4); border-left: var(--stroke) solid var(--rule); }
+.quote-note { margin-top: var(--space-3); color: var(--ink-muted); }

@@ -27,7 +27,7 @@ export default async function EditItemPage({
     await Promise.all([
       supabase.from('bundle').select('id, identifier, title').order('identifier'),
       supabase.from('place').select('id, family_name').order('family_name'),
-      supabase.from('subject').select('id, label').is('parent_id', null).order('sort_order'),
+      supabase.from('subject').select('id, label, parent_id').order('sort_order'),
       supabase.from('item_subject').select('subject_id').eq('item_id', item.id),
       supabase.from('file').select('id, original_filename, mime, bytes, width, height, duration_ms')
         .eq('item_id', item.id).order('created_at'),

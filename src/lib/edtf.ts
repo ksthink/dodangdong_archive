@@ -88,9 +88,14 @@ export function parseEdtf(raw: string | null | undefined): ParsedDate {
   return one(s);
 }
 
-/** 연표가 이 자료를 놓을 해. 197X 는 1975, 기간은 시작 해. */
+/**
+ * 연표가 이 자료를 놓을 해. 197X 는 1975, 기간은 시작 해.
+ * 세기(19XX)는 놓지 않는다 — "20세기 어느 때"를 한 해에 찍으면 모르는 것을
+ * 아는 척하게 된다. 연표·생애 띠·나이 계산에서 빠지고, 찾기·상세에는 남는다.
+ */
 export function edtfYear(raw: string | null | undefined): number | null {
   const p = parseEdtf(raw);
+  if (p.precision === 'century') return null;
   if (p.precision === 'decade' && p.start) return Number(p.start.slice(0, 4)) + 5;
   if (p.start) return Number(p.start.slice(0, 4));
   return null;

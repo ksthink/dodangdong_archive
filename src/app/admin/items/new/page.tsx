@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
 import { createItem } from '@/lib/actions';
 import ItemForm from '../item-form';
@@ -10,7 +9,7 @@ export default async function NewItemPage() {
   const [{ data: bundles }, { data: places }, { data: subjects }, { data: people }] = await Promise.all([
     supabase.from('bundle').select('id, identifier, title').order('identifier'),
     supabase.from('place').select('id, family_name').order('family_name'),
-    supabase.from('subject').select('id, label').is('parent_id', null).order('sort_order'),
+    supabase.from('subject').select('id, label, parent_id').order('sort_order'),
     supabase.from('person').select('id, display_name').order('born_year', { nullsFirst: false }),
   ]);
 

@@ -5,6 +5,7 @@ import {
   updateStory, deleteStory, addBlock, moveBlock, updateBlock, removeBlock,
 } from '@/lib/story-actions';
 import { TYPE_LABEL } from '@/lib/labels';
+import { ilikeAny } from '@/lib/search';
 import DeleteBox from '../../items/[identifier]/delete-box';
 
 export const dynamic = 'force-dynamic';
@@ -41,7 +42,8 @@ export default async function EditStoryPage({
   if (!story) notFound();
 
   let picker = supabase.from('item').select('identifier, title, type, created_edtf, access_level').order('submitted_at', { ascending: false }).limit(30);
-  if (q) picker = picker.or(`title.ilike.%${q.replace(/[,()%*\\]/g, ' ')}%,identifier.ilike.%${q.replace(/[,()%*\\]/g, ' ')}%`);
+  const cond = q ? ilikeAny(['title', 'identifier'], q) : null;
+  if (cond) picker = picker.or(cond);
 
   const [{ data: blocks }, { data: people }, { data: pickable }] = await Promise.all([
     supabase.from('curation_block')

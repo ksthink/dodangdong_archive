@@ -50,7 +50,8 @@ export default async function ItemPage({ params }: Params) {
     <Link key={p.identifier} href={`/people/${p.identifier}`}>{p.display_name}</Link>
   );
 
-  // 상세정보 표 — README 가 정한 순서. 값이 없는 행은 숨긴다.
+  // 상세정보 표 — 디자인 시스템(README '상세정보 표', MetadataTable)이 정한 순서.
+  // 값이 없는 행은 숨긴다. "기록 없음"은 관리 화면에서만 드러낸다(MetadataTable showEmpty).
   const rows: [string, string, React.ReactNode][] = [
     ['생산자', 'dc:creator', creatorPerson ? personLink(creatorPerson) : item.creator],
     ['생산일자', 'dc:date', item.created_edtf && (

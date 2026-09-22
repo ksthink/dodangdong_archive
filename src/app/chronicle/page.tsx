@@ -11,7 +11,7 @@ export const metadata = { title: '연표 · 도당동 아카이브' };
 
 type Row = {
   identifier: string; title: string; type: string;
-  created_edtf: string | null; date_verified: boolean;
+  created_edtf: string | null; created_start: string | null; date_verified: boolean;
 };
 
 // 한 해 안에서는 정확한 날짜 → 월까지 → 연도 → 추정 순.
@@ -27,7 +27,7 @@ export default async function ChroniclePage({ searchParams }: { searchParams: Pr
 
   // 비공개 자료는 RLS 가 행을 주지 않는다 — 연표에서도 조용히 빠진다.
   const [{ data: items }, { data: people }, { data: periods }, { data: world }, { data: links }] = await Promise.all([
-    supabase.from('item').select('identifier, title, type, created_edtf, date_verified').not('created_edtf', 'is', null),
+    supabase.from('item').select('identifier, title, type, created_edtf, created_start, date_verified').not('created_edtf', 'is', null),
     supabase.from('person').select('id, identifier, short_name, display_name, birth_edtf, born_year, died_year')
       .not('born_year', 'is', null).order('born_year'),
     supabase.from('life_period').select('person_id, label, from_year, to_year, sort_order').order('sort_order'),
@@ -42,7 +42,11 @@ export default async function ChroniclePage({ searchParams }: { searchParams: Pr
     if (y === null) continue;
     byYear.set(y, [...(byYear.get(y) ?? []), it]);
   }
-  for (const list of byYear.values()) list.sort((a, b) => rank(a.created_edtf) - rank(b.created_edtf));
+  // 정밀도 순으로 먼저, 같은 정밀도끼리는 날짜순(1976-02 → 1976-04).
+  for (const list of byYear.values()) {
+    list.sort((a, b) => rank(a.created_edtf) - rank(b.created_edtf)
+      || (a.created_start ?? '').localeCompare(b.created_start ?? ''));
+  }
 
   const worldByYear = new Map<number, string[]>();
   for (const w of world ?? []) worldByYear.set(w.year, [...(worldByYear.get(w.year) ?? []), w.label]);

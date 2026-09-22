@@ -132,6 +132,7 @@ export default async function StoryPage({ params }: Params) {
                 return (
                   <blockquote key={b.id} className="story-quote">
                     <p>{b.body}</p>
+                    {b.caption && <p className="body-sm quote-note">{b.caption}</p>}
                     <footer className="meta-value">
                       {speaker && <Link href={`/people/${speaker.identifier}`}>{speaker.display_name}</Link>}
                       {refs[0] && <> · <Link href={`/item/${refs[0].identifier}`}>{refs[0].title}</Link></>}

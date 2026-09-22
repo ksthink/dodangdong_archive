@@ -1,13 +1,12 @@
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
 import { TYPE_LABEL } from '@/lib/labels';
+import { ilikeAny } from '@/lib/search';
 import SiteHeader from '@/components/site-header';
 import SiteFooter from '@/components/site-footer';
 
 export const dynamic = 'force-dynamic';
 
-// PostgREST 의 or() 문법을 깨뜨리는 글자는 뺀다.
-const clean = (q: string) => q.replace(/[,()%*\\]/g, ' ').trim().slice(0, 80);
 
 export default async function SearchPage({
   searchParams,
@@ -15,7 +14,7 @@ export default async function SearchPage({
   searchParams: Promise<{ q?: string; type?: string }>;
 }) {
   const params = await searchParams;
-  const q = clean(params.q ?? '');
+  const q = (params.q ?? '').trim().slice(0, 80);
   const type = params.type && params.type in TYPE_LABEL ? params.type : null;
 
   const supabase = await createClient();
@@ -28,10 +27,10 @@ export default async function SearchPage({
     .limit(100);
   if (type) query = query.eq('type', type);
   if (q) {
-    const like = `%${q}%`;
-    query = query.or(
-      `title.ilike.${like},description.ilike.${like},creator.ilike.${like},source.ilike.${like},doc_type.ilike.${like},created_edtf.ilike.${like},identifier.ilike.${like}`,
-    );
+    const cond = ilikeAny(
+      ['title', 'description', 'creator', 'source', 'doc_type', 'created_edtf', 'identifier'], q);
+    // 쓸 만한 글자가 없는 검색어("*")는 전부가 아니라 아무것도 아닌 것으로 본다.
+    query = cond ? query.or(cond) : query.eq('identifier', '');
   }
 
   const [{ data: items }, { data: all }] = await Promise.all([
