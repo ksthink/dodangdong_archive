@@ -11,15 +11,22 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
  * 요소에는 aria-label 을 함께 붙여 화면 읽기 프로그램도 같은 내용을 읽게 한다.
  */
 export default function TipLayer() {
-  const [tip, setTip] = useState<{ text: string; x: number; y: number; below: boolean } | null>(null);
+  // x: 요소 가운데, top·bottom: 요소의 위·아래 끝(화면 좌표)
+  const [tip, setTip] = useState<{ text: string; x: number; top: number; bottom: number } | null>(null);
   const ref = useRef<HTMLDivElement>(null);
 
-  // 그린 뒤 폭을 재서 화면 밖으로 나가지 않게 좌우를 붙인다
+  // 그린 뒤 크기를 재서 자리를 정한다 — 좌우는 화면 안으로 붙이고,
+  // 위에 들어갈 자리가 없으면 요소 아래로 내린다(여러 줄 툴팁은 키가 크다)
   useLayoutEffect(() => {
     const box = ref.current;
     if (!box || !tip) return;
-    const w = box.offsetWidth;
-    box.style.left = `${Math.min(Math.max(tip.x - w / 2, 8), window.innerWidth - w - 8)}px`;
+    const { offsetWidth: w, offsetHeight: h } = box;
+    const gap = 8;
+    box.style.left = `${Math.min(Math.max(tip.x - w / 2, gap), window.innerWidth - w - gap)}px`;
+    const above = tip.top - h - gap;
+    const top = above >= gap ? above : Math.min(tip.bottom + gap, window.innerHeight - h - gap);
+    box.style.top = `${Math.max(top, gap)}px`;
+    box.style.visibility = 'visible';
   }, [tip]);
 
   useEffect(() => {
@@ -27,8 +34,7 @@ export default function TipLayer() {
       const el = (event.target as Element | null)?.closest?.('[data-tip]') as HTMLElement | null;
       if (!el) return;
       const r = el.getBoundingClientRect();
-      const below = r.top < 48; // 화면 맨 위면 아래로
-      setTip({ text: el.dataset.tip ?? '', x: r.left + r.width / 2, y: below ? r.bottom : r.top, below });
+      setTip({ text: el.dataset.tip ?? '', x: r.left + r.width / 2, top: r.top, bottom: r.bottom });
     };
     const hide = (event: Event) => {
       const el = (event.target as Element | null)?.closest?.('[data-tip]');
@@ -52,8 +58,8 @@ export default function TipLayer() {
 
   if (!tip?.text) return null;
   return (
-    <div ref={ref} role="presentation" aria-hidden className={tip.below ? 'tip is-below' : 'tip'}
-      style={{ left: tip.x, top: tip.y }}>
+    // 자리를 잡기 전에는 숨긴다(재기 전 한 번 엉뚱한 곳에 보이지 않게)
+    <div ref={ref} role="presentation" aria-hidden className="tip" style={{ left: 0, top: 0, visibility: 'hidden' }}>
       {tip.text}
     </div>
   );

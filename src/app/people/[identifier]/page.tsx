@@ -80,7 +80,7 @@ export default async function PersonPage({ params }: Params) {
   const recordMap = new Map<string, LaneRecord>();
   for (const it of [...((made ?? []) as ItemRow[]), ...appearsItems]) {
     const year = edtfYear(it.created_edtf);
-    if (year !== null) recordMap.set(it.identifier, { year, type: it.type, verified: it.date_verified });
+    if (year !== null) recordMap.set(it.identifier, { year, type: it.type, verified: it.date_verified, title: it.title, date: it.created_edtf });
   }
   const records = [...recordMap.values()];
   const years = records.map((r) => r.year);

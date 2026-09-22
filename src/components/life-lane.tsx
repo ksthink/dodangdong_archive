@@ -14,7 +14,7 @@ import ScrollToCursor from './scroll-to-cursor';
  * - 막대를 누르면 연표의 그해로 간다. 이름을 누르면 인물 페이지로 간다
  */
 
-export type LaneRecord = { year: number; type: string; verified: boolean };
+export type LaneRecord = { year: number; type: string; verified: boolean; title: string; date: string | null };
 export type Lane = {
   identifier: string;
   name: string;
@@ -37,15 +37,17 @@ export const TYPE_TOKEN: Record<string, string> = {
 /** 한 해가 최소 이만큼(px)은 되게 한다. 모자라면 가로로 밀어 본다. */
 export const MIN_YEAR_PX = 6;
 const MAX_BLOCKS = 8;
+const MAX_TIP_LINES = 8; // 툴팁에 한 해의 자료를 이만큼까지 적고 나머지는 "외 N건"
 const LABEL_PX_PER_CHAR = 12; // GalmuriMono11 한 글자(12px)
 
 export const yearHref = (year: number) => `/chronicle?decade=${Math.floor(year / 10) * 10}#y${year}`;
 
+/** 한 해의 자료 — 한 줄에 하나씩 "제목 | 연도 | 분류". 날짜 순, 모르는 날짜는 해만. */
 function describe(year: number, recs: LaneRecord[]) {
-  const counts = new Map<string, number>();
-  for (const r of recs) counts.set(r.type, (counts.get(r.type) ?? 0) + 1);
-  const parts = [...counts].map(([t, n]) => `${TYPE_LABEL[t] ?? t} ${n}`);
-  return `${year}년 · ${parts.join(' · ')}`;
+  const sorted = [...recs].sort((a, b) => (a.date ?? `${a.year}`).localeCompare(b.date ?? `${b.year}`));
+  const lines = sorted.slice(0, MAX_TIP_LINES).map((r) => `${r.title} | ${r.date ?? year} | ${TYPE_LABEL[r.type] ?? r.type}`);
+  if (sorted.length > MAX_TIP_LINES) lines.push(`외 ${sorted.length - MAX_TIP_LINES}건`);
+  return lines.join('\n');
 }
 
 export default function LifeLane({
@@ -98,7 +100,7 @@ export default function LifeLane({
           return (
             <Link key={year} href={yearHref(year)} className="lane-year"
               style={{ left: x(year), width: w(year, year + 1) }}
-              data-tip={label} aria-label={`${lane.name} ${label}`}>
+              data-tip={label} aria-label={`${lane.name} ${year}년: ${label.replaceAll('\n', ', ')}`}>
               {events.length > 0 && (
                 <span className={events.some((e) => e.verified) ? 'lane-event is-verified' : 'lane-event'} aria-hidden />
               )}

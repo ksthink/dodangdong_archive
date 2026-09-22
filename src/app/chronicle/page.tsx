@@ -32,7 +32,7 @@ export default async function ChroniclePage({ searchParams }: { searchParams: Pr
       .not('born_year', 'is', null).order('born_year'),
     supabase.from('life_period').select('person_id, label, from_year, to_year, sort_order').order('sort_order'),
     supabase.from('world_event').select('year, label').order('year').order('sort_order'),
-    supabase.from('item_person').select('person_id, item(identifier, type, created_edtf, date_verified)'),
+    supabase.from('item_person').select('person_id, item(identifier, title, type, created_edtf, date_verified)'),
   ]);
 
   // 해마다 묶는다. 197X 는 1975, 기간은 시작 해에 놓는다.
@@ -67,15 +67,15 @@ export default async function ChroniclePage({ searchParams }: { searchParams: Pr
 
   // 생애 띠 — 사람마다 그 사람이 나오거나 만든 자료. 한 자료는 한 번만 센다.
   const recordsOf = new Map<string, Map<string, LaneRecord>>();
-  const add = (personId: string, it: { identifier: string; type: string; created_edtf: string | null; date_verified: boolean }) => {
+  const add = (personId: string, it: { identifier: string; title: string; type: string; created_edtf: string | null; date_verified: boolean }) => {
     const y = edtfYear(it.created_edtf);
     if (y === null) return;
     const m = recordsOf.get(personId) ?? new Map<string, LaneRecord>();
-    m.set(it.identifier, { year: y, type: it.type, verified: it.date_verified });
+    m.set(it.identifier, { year: y, type: it.type, verified: it.date_verified, title: it.title, date: it.created_edtf });
     recordsOf.set(personId, m);
   };
   for (const l of links ?? []) {
-    const it = (Array.isArray(l.item) ? l.item[0] : l.item) as { identifier: string; type: string; created_edtf: string | null; date_verified: boolean } | null;
+    const it = (Array.isArray(l.item) ? l.item[0] : l.item) as { identifier: string; title: string; type: string; created_edtf: string | null; date_verified: boolean } | null;
     if (it) add(l.person_id, it);
   }
   for (const it of (items ?? []) as (Row & { creator_person_id: string | null })[]) {

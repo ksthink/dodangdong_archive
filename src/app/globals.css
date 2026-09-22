@@ -468,11 +468,10 @@ button.transcript-time:hover { border-color: var(--ink); }
 .stream-uploader .button { padding: var(--space-1) var(--space-3); }
 
 /* 픽셀 툴팁(TipLayer) — 브라우저 기본 툴팁 대신. 먹색 면, 갈무리, 흐림 없는 그림자 */
-.tip { position: fixed; z-index: 50; pointer-events: none; max-width: 320px;
-  transform: translateY(calc(-100% - 8px));
+/* 폭은 내용만큼(max-content) 먼저 잡고, 자리는 TipLayer 가 재서 정한다 */
+.tip { position: fixed; z-index: 50; pointer-events: none; width: max-content; max-width: min(560px, calc(100vw - 16px));
   background: var(--ink); color: var(--on-ink); font: var(--text-body-sm);
-  padding: var(--space-1) var(--space-2); box-shadow: var(--shadow-pixel); white-space: nowrap; }
-.tip.is-below { transform: translateY(8px); }
+  padding: var(--space-1) var(--space-2); box-shadow: var(--shadow-pixel); white-space: pre-line; }
 
 /* 목록 상자 — 펼친 목록의 항목에도 갈무리를 입힌다(Windows·Linux 의 Chrome·Firefox 는 이것으로 된다) */
 select.field, select.field option { font: var(--text-body-sm); }
