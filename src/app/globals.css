@@ -306,3 +306,14 @@ a:hover { text-decoration: underline; text-decoration-thickness: var(--stroke); 
 .event, .record { font: var(--text-body-sm); margin-bottom: var(--space-2); }
 .mark-square { display: inline-block; width: 11px; height: 11px; background: var(--ink); margin-right: var(--space-2); vertical-align: -1px; }
 .world { color: var(--ink-muted); }
+
+/* 이야기 편집 — 블록 */
+.blocks { display: grid; gap: var(--space-3); max-width: 880px; }
+.block { border: var(--stroke) solid var(--ink); padding: var(--space-3); display: grid; gap: var(--space-2); }
+.block-head { display: flex; justify-content: space-between; align-items: center; gap: var(--space-2); }
+.block-tools { display: flex; gap: var(--space-1); }
+.tool { font: var(--text-body-sm); border: var(--stroke) solid var(--rule-strong); background: var(--paper); color: var(--ink); padding: 0 var(--space-2); cursor: pointer; }
+.tool:disabled { color: var(--ink-muted); border-color: var(--rule); cursor: default; }
+.block-edit { display: grid; gap: var(--space-2); }
+.block-edit .button { justify-self: start; }
+ul.help { margin-top: var(--space-2); display: grid; gap: var(--space-1); }
