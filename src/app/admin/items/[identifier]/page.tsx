@@ -7,7 +7,7 @@ import { parseTranscript } from '@/lib/transcript';
 import ItemForm from '../item-form';
 import DeleteBox from './delete-box';
 import Uploader from './uploader';
-import { isConnected } from '@/lib/google/drive';
+import { folderUrl, isConnected } from '@/lib/google/drive';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,7 +25,7 @@ export default async function EditItemPage({
   if (!item) notFound();
 
   const [{ data: bundles }, { data: places }, { data: subjects }, { data: chosen }, { data: files }, driveReady,
-    { data: people }, { data: depicted }, { data: transcript }] =
+    { data: people }, { data: depicted }, { data: transcript }, { data: folder }] =
     await Promise.all([
       supabase.from('bundle').select('id, identifier, title').order('identifier'),
       supabase.from('place').select('id, family_name').order('family_name'),
@@ -37,6 +37,10 @@ export default async function EditItemPage({
       supabase.from('person').select('id, display_name').order('born_year', { nullsFirst: false }),
       supabase.from('item_person').select('person_id').eq('item_id', item.id).eq('role', 'depicted'),
       supabase.from('transcript').select('full_text, reviewed, modified_at').eq('item_id', item.id).maybeSingle(),
+      // 이 자료의 원본이 들어가는 Drive 폴더(묶음 폴더)
+      item.bundle_id
+        ? supabase.from('bundle').select('identifier, drive_folder_id').eq('id', item.bundle_id).maybeSingle()
+        : Promise.resolve({ data: null }),
     ]);
 
   const save = updateItem.bind(null, identifier);
@@ -69,6 +73,12 @@ export default async function EditItemPage({
           <span>원본</span>
           <span className="meta-value">{files?.length ?? 0}개</span>
         </h2>
+        {folder?.drive_folder_id && (
+          <p className="help" style={{ marginBottom: 'var(--space-4)' }}>
+            Drive 의 {folder.identifier} 폴더에 들어 있다.{' '}
+            <a href={folderUrl(folder.drive_folder_id)} target="_blank" rel="noopener noreferrer">폴더 열기 ↗</a>
+          </p>
+        )}
 
         {files?.length ? (
           <ul className="filelist">

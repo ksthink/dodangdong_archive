@@ -122,6 +122,14 @@ export async function rootFolder(): Promise<string> {
   return id;
 }
 
+/** 이미 만들어 둔 바깥 폴더. 없으면 null — 보여 주려고 폴더를 새로 만들지는 않는다. */
+export async function savedRootFolder(): Promise<string | null> {
+  return setting(ROOT_FOLDER_KEY);
+}
+
+/** Drive 웹에서 폴더를 여는 주소. 폴더를 만든 Google 계정으로 로그인해 있어야 열린다. */
+export const folderUrl = (id: string) => `https://drive.google.com/drive/folders/${encodeURIComponent(id)}`;
+
 /** 묶음 하나가 폴더 하나다. bundle.drive_folder_id 에 적어 둔다. */
 export async function bundleFolder(bundleId: string): Promise<string> {
   const supabase = await createClient();
