@@ -26,18 +26,23 @@ export async function GET(request: NextRequest) {
   const code = params.get('code');
   if (!code) return back(request, '인증 코드를 받지 못했다.');
 
-  const res = await fetch('https://oauth2.googleapis.com/token', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({
-      code,
-      client_id: googleClientId(),
-      client_secret: googleClientSecret(),
-      redirect_uri: redirectUri(request.nextUrl.origin),
-      grant_type: 'authorization_code',
-    }),
-    cache: 'no-store',
-  });
+  let res: Response;
+  try {
+    res = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        code,
+        client_id: googleClientId(),
+        client_secret: googleClientSecret(),
+        redirect_uri: redirectUri(request.nextUrl.origin),
+        grant_type: 'authorization_code',
+      }),
+      cache: 'no-store',
+    });
+  } catch (cause) {
+    return back(request, cause instanceof Error ? cause.message : '토큰을 받지 못했다.');
+  }
 
   const json = await res.json();
   if (!res.ok) return back(request, `토큰을 받지 못했다: ${json.error_description ?? json.error ?? res.status}`);

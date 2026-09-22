@@ -13,8 +13,19 @@ export async function GET(request: NextRequest) {
   const origin = request.nextUrl.origin;
   const state = randomBytes(16).toString('hex');
 
+  // 설정이 빠져 있으면 빈 500 대신 무엇이 없는지 화면에 적어 보낸다.
+  let clientId: string;
+  try {
+    clientId = googleClientId();
+  } catch (cause) {
+    const message = cause instanceof Error ? cause.message : '설정을 읽지 못했다.';
+    const url = new URL('/admin/drive', request.url);
+    url.searchParams.set('오류', `${message} 값을 넣은 뒤에는 반드시 다시 배포해야 반영된다.`);
+    return NextResponse.redirect(url);
+  }
+
   const url = new URL('https://accounts.google.com/o/oauth2/v2/auth');
-  url.searchParams.set('client_id', googleClientId());
+  url.searchParams.set('client_id', clientId);
   url.searchParams.set('redirect_uri', redirectUri(origin));
   url.searchParams.set('response_type', 'code');
   url.searchParams.set('scope', DRIVE_SCOPE);
