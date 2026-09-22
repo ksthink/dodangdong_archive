@@ -1,5 +1,8 @@
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
+import { createAnonClient } from '@/lib/supabase/anon';
+import { resolveHero } from '@/lib/hero';
+import Hero from '@/components/hero';
 import { thumbsFor } from '@/lib/thumbs';
 import Thumb from '@/components/thumb';
 import SiteFooter from '@/components/site-footer';
@@ -20,6 +23,8 @@ const TYPE_LABEL: Record<string, string> = {
 
 export default async function Home() {
   const supabase = await createClient();
+  // 히어로는 누가 보든 손님에게 보이는 것으로 고른다 — 관리자에게 비공개 이야기가 걸려 보이지 않게.
+  const heroSlides = await resolveHero(createAnonClient());
 
   const [{ data: items }, { data: stories }, { data: counts }] = await Promise.all([
     supabase
@@ -51,6 +56,8 @@ export default async function Home() {
         한 집안의 사진·편지·음성·영상과 그에 얽힌 사건을 모아 기술해 둔 곳이다.
         지금 공개된 자료는 {total}건이다.
       </p>
+
+      <Hero slides={heroSlides} />
 
       <form action="/search" style={{ marginTop: 'var(--space-8)', display: 'flex', gap: 'var(--space-2)' }}>
         <input className="field" type="search" name="q" placeholder="자료 찾기" aria-label="자료 찾기" />

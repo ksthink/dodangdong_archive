@@ -374,3 +374,39 @@ ul.help { margin-top: var(--space-2); display: grid; gap: var(--space-1); }
 .file-thumb img { width: 100%; height: 100%; object-fit: cover; }
 /* 축 줄의 이름 칸은 비어 있다 — 바탕을 깔면 첫 눈금(1930)을 덮는다 */
 .lane-axis-row .lane-name { background: transparent; }
+
+/* 첫 화면 히어로 — 왼쪽 글, 오른쪽 겹친 사진. 좁은 화면에서는 사진이 위로. */
+.hero { margin-top: var(--space-8); border: var(--stroke) solid var(--ink); background: var(--paper); }
+.hero-slide { display: grid; grid-template-columns: 1fr; gap: var(--space-6); padding: var(--space-6); }
+@media (min-width: 860px) { .hero-slide { grid-template-columns: 1fr 1fr; align-items: center; } }
+.hero-text { display: grid; gap: var(--space-2); justify-items: start; }
+@media (max-width: 859px) { .hero-text { order: 2; } }
+.hero-kind { font: var(--text-pixel-label); background: var(--ink); color: var(--on-ink); padding: var(--space-1) var(--space-2); }
+.hero-title { margin-top: var(--space-2); }
+.hero-cta { margin-top: var(--space-4); }
+.hero-cta:hover { text-decoration: none; }
+.hero-collage { position: relative; height: 300px; }
+.hero-collage img { position: absolute; object-fit: cover; border: var(--stroke) solid var(--ink); box-shadow: var(--shadow-pixel); background: var(--paper-sunken); }
+.hero-collage.n1 img.c0 { inset: 0; width: 100%; height: 100%; }
+.hero-collage.n2 img.c0 { left: 0; top: 0; width: 68%; height: 78%; }
+.hero-collage.n2 img.c1 { right: 0; bottom: 0; width: 52%; height: 60%; }
+.hero-collage.n3 img.c0 { left: 0; top: 0; width: 60%; height: 70%; }
+.hero-collage.n3 img.c1 { right: 0; top: 12%; width: 44%; height: 50%; }
+.hero-collage.n3 img.c2 { left: 26%; bottom: 0; width: 42%; height: 46%; }
+.hero-empty { position: absolute; inset: 0; aspect-ratio: auto; border: var(--stroke) solid var(--ink); }
+.hero-nav { display: flex; align-items: center; gap: var(--space-2); padding: var(--space-3) var(--space-6); border-top: var(--stroke) solid var(--rule); }
+.hero-dots { display: flex; gap: var(--space-1); }
+.dot { width: 11px; height: 11px; padding: 0; border: var(--stroke) solid var(--ink); background: var(--paper); cursor: pointer; }
+.dot.is-on { background: var(--ink); }
+
+/* 첫 화면 편성 */
+.hero-schedule { display: grid; gap: var(--space-6); }
+.schedule-row { display: grid; gap: var(--space-6); }
+@media (min-width: 860px) { .schedule-row { grid-template-columns: 3fr 2fr; } }
+.schedule-form { display: grid; gap: var(--space-2); }
+.schedule-form .button { justify-self: start; margin-top: var(--space-2); }
+.schedule-dates { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-2); }
+.schedule-dates .label { display: grid; gap: var(--space-1); }
+.schedule-live { display: grid; gap: var(--space-2); align-content: start; border-left: var(--stroke) solid var(--rule); padding-left: var(--space-4); }
+/* hidden 속성은 기본으로 display:none 이지만 위의 display:grid 가 덮어쓴다 — 되돌린다 */
+.hero-slide[hidden] { display: none; }

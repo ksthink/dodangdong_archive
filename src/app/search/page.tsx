@@ -13,13 +13,18 @@ export const dynamic = 'force-dynamic';
 export default async function SearchPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; type?: string }>;
+  searchParams: Promise<{ q?: string; type?: string; bundle?: string }>;
 }) {
   const params = await searchParams;
   const q = (params.q ?? '').trim().slice(0, 80);
   const type = params.type && params.type in TYPE_LABEL ? params.type : null;
 
   const supabase = await createClient();
+
+  // 묶음으로 좁히기(첫 화면 "새로 들어온 기록"이 여기로 온다). 손님에게는 공개 자료가 있는 묶음만 보인다.
+  const { data: bundle } = params.bundle && /^DC-\d+$/.test(params.bundle)
+    ? await supabase.from('bundle').select('id, identifier, title').eq('identifier', params.bundle).maybeSingle()
+    : { data: null };
 
   // 비공개 자료는 RLS 가 행 자체를 주지 않는다 — 여기서 따로 거르지 않는다.
   let query = supabase
@@ -28,6 +33,7 @@ export default async function SearchPage({
     .order('created_start', { ascending: true, nullsFirst: false })
     .limit(100);
   if (type) query = query.eq('type', type);
+  if (params.bundle) query = query.eq('bundle_id', bundle?.id ?? '00000000-0000-0000-0000-000000000000');
   if (q) {
     const cond = ilikeAny(
       ['title', 'description', 'creator', 'source', 'doc_type', 'created_edtf', 'identifier'], q);
@@ -37,7 +43,7 @@ export default async function SearchPage({
 
   const [{ data: items }, { data: all }] = await Promise.all([
     query,
-    supabase.from('item').select('type'),
+    (bundle ? supabase.from('item').select('type').eq('bundle_id', bundle.id) : supabase.from('item').select('type')),
   ]);
 
   const thumbs = await thumbsFor(supabase, (items ?? []).map((i) => i.id));
@@ -47,6 +53,7 @@ export default async function SearchPage({
 
   const href = (next: { q?: string | null; type?: string | null }) => {
     const p = new URLSearchParams();
+    if (bundle) p.set('bundle', bundle.identifier);
     const nq = next.q === undefined ? q : next.q;
     const nt = next.type === undefined ? type : next.type;
     if (nq) p.set('q', nq);
@@ -63,6 +70,7 @@ export default async function SearchPage({
 
         <form action="/search" className="searchbar">
           {type && <input type="hidden" name="type" value={type} />}
+          {bundle && <input type="hidden" name="bundle" value={bundle.identifier} />}
           <input className="field" type="search" name="q" defaultValue={q}
             placeholder="제목, 사람, 장소, 연도 — 예: 할머니 1978" aria-label="자료 찾기" />
           <button className="button" type="submit">찾기</button>
@@ -100,6 +108,11 @@ export default async function SearchPage({
 
           <section>
             <p className="result-head">
+              {bundle && (
+                <span className="heading">묶음 {bundle.identifier} {bundle.title}{' '}
+                  <Link className="meta-value" href={q || type ? `/search?${new URLSearchParams({ ...(q ? { q } : {}), ...(type ? { type } : {}) })}` : '/search'}>묶음 풀기 ×</Link>
+                </span>
+              )}
               {q && <span className="heading">‘{q}’ 검색 결과</span>}
               <span className="meta-value">
                 {type ? `${TYPE_LABEL[type]} · ` : ''}전체 {items?.length ?? 0}건
