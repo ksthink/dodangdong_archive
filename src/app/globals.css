@@ -283,3 +283,26 @@ a:hover { text-decoration: underline; text-decoration-thickness: var(--stroke); 
 .facts { display: grid; grid-template-columns: max-content 1fr; gap: var(--space-1) var(--space-4); margin-top: var(--space-4); font: var(--text-body-sm); }
 .facts dt { color: var(--ink-muted); }
 .facts dd { margin: 0; }
+
+/* 연표 — 연대 막대 */
+.decades { display: grid; grid-template-columns: repeat(auto-fit, minmax(64px, 1fr)); gap: var(--space-1); margin-top: var(--space-8); border-top: var(--stroke-heavy) solid var(--ink); padding-top: var(--space-3); }
+.decade { display: grid; justify-items: center; gap: var(--space-1); padding: var(--space-2) 0; }
+.decade:hover { text-decoration: none; background: var(--paper-sunken); }
+.decade.is-on { background: var(--ink); }
+.decade.is-on .meta-value { color: var(--on-ink); }
+.decade.is-empty { opacity: .5; }
+.decade-bar { display: grid; grid-template-rows: repeat(8, 4px); gap: 2px; width: 16px; }
+.decade-bar i { background: var(--rule); }
+.decade-bar i.on { background: var(--ink); }
+.decade.is-on .decade-bar i.on { background: var(--on-ink); }
+.decade-bar { transform: rotate(180deg); }
+
+/* 연표 — 해별 펼침 */
+.year { border-top: var(--stroke-heavy) solid var(--ink); padding: var(--space-4) 0 var(--space-8); }
+.ages { margin-top: var(--space-2); }
+.year-cols { display: grid; gap: var(--space-6); margin-top: var(--space-4); }
+@media (min-width: 900px) { .year-cols { grid-template-columns: 1fr 2fr 1fr; } }
+.year-cols .label { margin: 0 0 var(--space-2); }
+.event, .record { font: var(--text-body-sm); margin-bottom: var(--space-2); }
+.mark-square { display: inline-block; width: 11px; height: 11px; background: var(--ink); margin-right: var(--space-2); vertical-align: -1px; }
+.world { color: var(--ink-muted); }
