@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
+import SiteFooter from '@/components/site-footer';
 
 // 첫 화면은 로그인 화면이 아니라 아카이브 그 자체다.
 // 손님은 세션 없이 여기에 닿고, RLS 가 공개 자료만 돌려준다.
@@ -109,10 +110,7 @@ export default async function Home() {
         )}
       </section>
 
-      <footer className="footer">
-        <span>도당동 아카이브</span>
-        <Link href="/login">관리</Link>
-      </footer>
+      <SiteFooter />
     </main>
   );
 }

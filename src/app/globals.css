@@ -211,3 +211,42 @@ a:hover { text-decoration: underline; text-decoration-thickness: var(--stroke); 
 /* 붙어 있는 원본 */
 .filelist { display: grid; gap: var(--space-2); max-width: var(--measure); }
 .filelist li { display: grid; grid-template-columns: 1fr auto; gap: var(--space-4); align-items: center; border: var(--stroke) solid var(--rule); padding: var(--space-3); }
+
+/* 공개 화면 머리 */
+.site-head { max-width: var(--page-max); margin: 0 auto; padding: var(--space-4); display: flex; justify-content: space-between; align-items: baseline; gap: var(--space-4); border-bottom: var(--stroke) solid var(--rule); }
+@media (min-width: 900px) { .site-head { padding-inline: var(--space-16); } }
+.site-name { font: var(--text-heading); }
+.site-nav { display: flex; gap: var(--space-4); font: var(--text-body-sm); }
+
+/* 찾기 */
+.searchbar { display: flex; gap: var(--space-2); margin-top: var(--space-6); max-width: var(--measure); }
+.search-layout { display: grid; gap: var(--space-8); margin-top: var(--space-8); }
+@media (min-width: 900px) { .search-layout { grid-template-columns: 240px 1fr; } }
+.facet-title { font: var(--text-body-sm); font-weight: 700; margin-bottom: var(--space-3); display: flex; justify-content: space-between; }
+.facets { display: grid; gap: var(--space-1); }
+.facet { display: flex; justify-content: space-between; gap: var(--space-2); padding: var(--space-1) var(--space-2); font: var(--text-body-sm); border: var(--stroke) solid transparent; }
+.facet.is-on { background: var(--ink); color: var(--on-ink); }
+.facet.is-on .meta-value { color: var(--on-ink); }
+.facet.is-empty { color: var(--ink-muted); }
+.result-head { display: flex; flex-wrap: wrap; gap: var(--space-4); align-items: baseline; padding-bottom: var(--space-3); border-bottom: var(--stroke-heavy) solid var(--ink); }
+.results li { border-bottom: var(--stroke) solid var(--rule); }
+.result { display: grid; grid-template-columns: 120px 1fr; gap: var(--space-4); padding: var(--space-4) 0; }
+.result:hover { text-decoration: none; }
+.result:hover .heading { text-decoration: underline; text-decoration-thickness: var(--stroke); }
+.clamp2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+
+/* 자료 상세 */
+.crumbs a { text-decoration: underline; }
+.figure-one { margin-top: var(--space-8); }
+.figure-one img { max-height: 80vh; width: auto; border: var(--stroke) solid var(--ink); }
+.figure-grid { margin-top: var(--space-8); display: grid; gap: var(--space-2); grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+.figure-grid img { aspect-ratio: 1; object-fit: cover; width: 100%; border: var(--stroke) solid var(--ink); }
+.media-list { margin-top: var(--space-6); display: grid; gap: var(--space-4); max-width: var(--measure); }
+.media-list audio, .media-list video { width: 100%; }
+
+/* 상세정보 표 — 요소명은 들어간 면, 행 사이만 rule */
+.meta-table { border-top: var(--stroke-heavy) solid var(--ink); }
+.meta-row { display: grid; grid-template-columns: 1fr; border-bottom: var(--stroke) solid var(--rule); }
+@media (min-width: 560px) { .meta-row { grid-template-columns: 220px 1fr; } }
+.meta-row dt { background: var(--paper-sunken); padding: var(--space-3); display: flex; justify-content: space-between; gap: var(--space-2); font: var(--text-body-sm); font-weight: 700; }
+.meta-row dd { margin: 0; padding: var(--space-3); font: var(--text-body-sm); }
