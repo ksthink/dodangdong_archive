@@ -5,6 +5,8 @@
 *, *::before, *::after { box-sizing: border-box; }
 
 html {
+  /* 밝은 화면만 — 입력칸·스크롤바도 밝게 그리고, 브라우저의 자동 어둡게를 막는다 */
+  color-scheme: only light;
   background: var(--paper);
   /* 픽셀 글꼴은 안티앨리어싱을 끄고 써야 격자가 산다 */
   -webkit-font-smoothing: none;
@@ -248,6 +250,8 @@ a:hover { text-decoration: underline; text-decoration-thickness: var(--stroke); 
 .figure-grid img { aspect-ratio: 1; object-fit: cover; width: 100%; border: var(--stroke) solid var(--ink); }
 .media-list { margin-top: var(--space-6); display: grid; gap: var(--space-4); max-width: var(--measure); }
 .media-list audio, .media-list video { width: 100%; }
+/* 세로 영상이 화면보다 길어지지 않게 — 남는 자리는 먹색 띠 */
+.media-list video { max-height: 80vh; background: var(--ink); }
 
 /* 상세정보 표 — 요소명은 들어간 면, 행 사이만 rule */
 .meta-table { border-top: var(--stroke-heavy) solid var(--ink); }
@@ -453,3 +457,8 @@ button.transcript-time:hover { border-color: var(--ink); }
 .tree-card.is-root { border-width: var(--stroke-heavy); box-shadow: var(--shadow-pixel); }
 .tree-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+
+/* 재생용(stream) — 원본 아래 한 줄: 설명과 올리기·떼기 */
+.stream-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-3); margin-top: var(--space-2); }
+.stream-uploader { display: inline-flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
+.stream-uploader .button { padding: var(--space-1) var(--space-3); }

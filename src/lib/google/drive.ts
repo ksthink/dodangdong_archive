@@ -38,19 +38,27 @@ export async function isConnected() {
 }
 
 export async function saveRefreshToken(token: string) {
+  cached = null;
   await putSetting(REFRESH_TOKEN_KEY, token);
 }
 
 export async function disconnect() {
+  cached = null;
   const supabase = await createClient();
   await supabase.from('app_setting').delete().in('key', [REFRESH_TOKEN_KEY, ROOT_FOLDER_KEY]);
 }
 
 /**
  * 짧은 수명의 접근 토큰. 리프레시 토큰은 app_setting 에만 있고 브라우저로 나가지 않는다.
- * 토큰을 메모리에 캐시하지 않는다 — 함수 인스턴스가 재사용돼도 섞이지 않게.
+ * 연결된 Drive 계정은 하나뿐이라 모든 요청의 토큰이 같다 — 인스턴스 메모리에 잠시 둬도 섞이지 않는다.
+ * 다시 연결하면 이 인스턴스의 캐시는 버리고, 다른 인스턴스는 늦어도 한 시간 안에 새로 받는다.
  */
+// 접근 토큰은 한 시간쯤 산다. 같은 함수 인스턴스 안에서는 만료 1분 전까지 다시 쓴다
+// (요청마다 설정을 읽고 Google 에 새로 받으면 원본 한 번 여는 데 왕복이 두 번 더 든다).
+let cached: { token: string; until: number } | null = null;
+
 export async function accessToken(): Promise<string> {
+  if (cached && Date.now() < cached.until) return cached.token;
   const refresh = await setting(REFRESH_TOKEN_KEY);
   if (!refresh) throw new Error('Google Drive 가 아직 연결되지 않았다. 관리 → Drive 연결에서 잇는다.');
 
@@ -70,7 +78,8 @@ export async function accessToken(): Promise<string> {
   if (!res.ok) {
     throw new Error(`Google 토큰을 갱신하지 못했다: ${json.error_description ?? json.error ?? res.status}`);
   }
-  return json.access_token as string;
+  cached = { token: json.access_token as string, until: Date.now() + (Number(json.expires_in ?? 3600) - 60) * 1000 };
+  return cached.token;
 }
 
 async function drive(path: string, init: RequestInit = {}) {

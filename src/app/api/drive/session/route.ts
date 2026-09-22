@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createClient, getAdmin } from '@/lib/supabase/server';
 import { bundleFolder, fileMeta, nameTaken, uploadSession } from '@/lib/google/drive';
-import { extOf, originalName, thumbName } from '@/lib/google/naming';
+import { extOf, originalName, streamName, thumbName } from '@/lib/google/naming';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,12 +24,16 @@ export async function POST(request: NextRequest) {
 
     // Drive 이름은 규칙대로(src/lib/google/naming.ts). 올린 원래 이름은 register 가 표에 남긴다.
     let driveName: string;
-    if (role === 'thumb') {
-      // 썸네일은 그 원본의 Drive 이름을 따른다 — 원본이 이 자료의 것인지 확인한다
+    if (role === 'thumb' || role === 'stream') {
+      // 썸네일·재생용은 그 원본의 Drive 이름을 따른다 — 원본이 이 자료의 것인지 확인한다
       const { data: source } = await supabase
-        .from('file').select('storage_path').eq('id', derivedFrom ?? '').eq('item_id', itemId).eq('role', 'original').maybeSingle();
-      if (!source) return NextResponse.json({ error: '썸네일의 원본이 이 자료의 원본이 아니다.' }, { status: 400 });
-      driveName = thumbName((await fileMeta(source.storage_path)).name);
+        .from('file').select('storage_path, mime').eq('id', derivedFrom ?? '').eq('item_id', itemId).eq('role', 'original').maybeSingle();
+      if (!source) return NextResponse.json({ error: '파생 파일의 원본이 이 자료의 원본이 아니다.' }, { status: 400 });
+      if (role === 'stream' && !source.mime?.startsWith('video/')) {
+        return NextResponse.json({ error: '재생용은 영상 원본에만 붙인다.' }, { status: 400 });
+      }
+      const sourceName = (await fileMeta(source.storage_path)).name;
+      driveName = role === 'thumb' ? thumbName(sourceName) : streamName(sourceName);
     } else {
       const at = new Date();
       const ext = extOf(String(name));

@@ -4,6 +4,7 @@
  *   DA-0017_20260922190012.jpg         원본 — 식별자_올린 시각(한국 시간, 초까지)
  *   DA-0017_20260922190012-2.jpg       같은 이름이 이미 있으면 -2, -3 …
  *   DA-0017_20260922190012_thumb.jpg   썸네일 — 원본 이름 + _thumb
+ *   DA-0053_20260922195142_stream.mp4  재생용 사본(영상) — 원본 이름 + _stream
  *
  * 이름에는 한글·공백이 들어가지 않는다 — 영문 식별자, 숫자, 영문 확장자만(ASCII).
  * 날짜는 올린 시각이지 자료가 만들어진 날(dc:date)이 아니다.
@@ -53,4 +54,9 @@ export function bundleFolderName(identifier: string): string {
 /** 썸네일 이름 — 원본의 Drive 이름에서 확장자를 떼고 _thumb.jpg */
 export function thumbName(originalDriveName: string): string {
   return ascii(`${originalDriveName.replace(/\.[^.]+$/, '')}_thumb.jpg`);
+}
+
+/** 재생용 사본 이름 — 원본의 Drive 이름에서 확장자를 떼고 _stream.mp4 */
+export function streamName(originalDriveName: string): string {
+  return ascii(`${originalDriveName.replace(/\.[^.]+$/, '')}_stream.mp4`);
 }

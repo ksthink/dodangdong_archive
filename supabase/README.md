@@ -14,6 +14,8 @@
 | `0008_relation_both_visible.sql` | 가족 관계는 양쪽 사람이 모두 보일 때만 손님에게 준다 |
 | `0009_file_derived_from.sql` | 썸네일이 어느 원본의 것인지 잇는다(원본 하나에 썸네일 하나) |
 | `0010_transcript_one_per_item.sql` | 자료 하나에 녹취록 하나 |
+| `0011_file_media_info.sql` | 파일에 코덱·목차 위치(faststart) 칸. 역할 설명(원본·썸네일·재생용) |
+| `0012_one_stream_per_original.sql` | 원본 하나에 재생용(stream) 하나 |
 
 ## 권한 규칙
 

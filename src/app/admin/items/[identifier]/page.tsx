@@ -7,6 +7,7 @@ import { parseTranscript } from '@/lib/transcript';
 import ItemForm from '../item-form';
 import DeleteBox from './delete-box';
 import Uploader from './uploader';
+import StreamUploader from './stream-uploader';
 import { folderUrl, isConnected } from '@/lib/google/drive';
 
 export const dynamic = 'force-dynamic';
@@ -31,7 +32,7 @@ export default async function EditItemPage({
       supabase.from('place').select('id, family_name').order('family_name'),
       supabase.from('subject').select('id, label, parent_id').order('sort_order'),
       supabase.from('item_subject').select('subject_id').eq('item_id', item.id),
-      supabase.from('file').select('id, original_filename, mime, bytes, width, height, duration_ms, thumbs:file!derived_from(id)')
+      supabase.from('file').select('id, original_filename, mime, bytes, width, height, duration_ms, codec, faststart, derived:file!derived_from(id, role, original_filename, bytes, width, height, codec)')
         .eq('item_id', item.id).eq('role', 'original').order('created_at'),
       isConnected(),
       supabase.from('person').select('id, display_name').order('born_year', { nullsFirst: false }),
@@ -84,11 +85,20 @@ export default async function EditItemPage({
           <ul className="filelist">
             {files.map((f) => {
               const detach = detachFile.bind(null, identifier, f.id);
-              const thumb = (f.thumbs as unknown as { id: string }[] | null)?.[0]?.id;
+              type Derived = { id: string; role: string; original_filename: string | null; bytes: number | null;
+                width: number | null; height: number | null; codec: string | null };
+              const derived = (f.derived as unknown as Derived[] | null) ?? [];
+              const thumb = derived.find((d) => d.role === 'thumb')?.id;
+              const stream = derived.find((d) => d.role === 'stream');
               const isImage = f.mime?.startsWith('image/');
+              const isVideo = f.mime?.startsWith('video/');
+              const videoCodec = f.codec?.split(',')[0];
+              // 재생 규격(H.264·AAC·목차 앞) 밖의 원본 — 손님이 틀려면 재생용이 따로 있어야 한다
+              const offSpec = isVideo && ((videoCodec && !['avc1', 'avc3'].includes(videoCodec)) || f.faststart === false || !f.codec);
+              const showThumb = isImage || isVideo;
               return (
-                <li key={f.id} className={isImage ? 'has-thumb' : ''}>
-                  {isImage && (
+                <li key={f.id} className={showThumb ? 'has-thumb' : ''}>
+                  {showThumb && (
                     <span className="file-thumb">
                       {thumb
                         // eslint-disable-next-line @next/next/no-img-element
@@ -105,9 +115,37 @@ export default async function EditItemPage({
                       {[f.mime, f.bytes ? `${Math.round(f.bytes / 1024 / 1024 * 10) / 10} MB` : null,
                         f.width && f.height ? `${f.width}×${f.height}` : null,
                         f.duration_ms ? `${Math.round(f.duration_ms / 1000)}초` : null,
-                        isImage ? (thumb ? '썸네일 있음' : '썸네일 없음') : null]
+                        f.codec, f.faststart === false ? '목차 끝' : null,
+                        isImage || isVideo ? (thumb ? '썸네일 있음' : '썸네일 없음') : null,
+                        stream ? '재생용 있음' : null]
                         .filter(Boolean).join(' · ')}
                     </span>
+                    {isVideo && stream && (
+                      <span className="stream-row">
+                        <span className="help">
+                          재생용 — 손님은 이 파일을 튼다:{' '}
+                          <a href={`/api/media/${stream.id}`} target="_blank" rel="noreferrer">{stream.original_filename}</a>{' '}
+                          <span className="meta-value">
+                            {[stream.codec, stream.width && stream.height ? `${stream.width}×${stream.height}` : null,
+                              stream.bytes ? `${Math.round(stream.bytes / 1024 / 1024 * 10) / 10} MB` : null].filter(Boolean).join(' · ')}
+                          </span>
+                        </span>
+                        <form action={detachFile.bind(null, identifier, stream.id)}>
+                          <button className="tool" type="submit">재생용 떼기</button>
+                        </form>
+                      </span>
+                    )}
+                    {isVideo && !stream && offSpec && (
+                      <span className="stream-row">
+                        <span className="help">
+                          {f.codec
+                            ? `재생 규격 밖이다${videoCodec && !['avc1', 'avc3'].includes(videoCodec) ? ` — ${videoCodec === 'hvc1' || videoCodec === 'hev1' ? 'HEVC' : videoCodec} 는 일부 브라우저에서 재생되지 않는다` : ''}${f.faststart === false ? ' — 목차가 끝에 있어 재생 시작이 느리다' : ''}. `
+                            : '코덱을 모른다. '}
+                          H.264·AAC·웹 최적화 MP4 로 바꿔 재생용으로 붙인다.
+                        </span>
+                        {driveReady && <StreamUploader itemId={item.id} originalId={f.id} hasThumb={!!thumb} />}
+                      </span>
+                    )}
                   </span>
                   <form action={detach}>
                     <button className="button is-secondary" type="submit">떼기</button>

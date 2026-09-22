@@ -32,7 +32,9 @@ export default async function ItemPage({ params }: Params) {
   if (!item) notFound();
 
   const [{ data: files }, { data: subjects }, { data: people }, { data: transcript }] = await Promise.all([
-    supabase.from('file').select('id, mime, original_filename, width, height').eq('item_id', item.id).eq('role', 'original').order('created_at'),
+    // 원본과, 원본에서 만든 재생용 사본(stream)·썸네일(thumb, 영상 포스터로 쓴다)
+    supabase.from('file').select('id, role, derived_from, mime, original_filename, width, height, bytes, codec')
+      .eq('item_id', item.id).in('role', ['original', 'stream', 'thumb']).order('created_at'),
     supabase.from('item_subject').select('subject(label)').eq('item_id', item.id),
     supabase.from('item_person').select('role, person(display_name, identifier)').eq('item_id', item.id),
     supabase.from('transcript').select('segments, reviewed').eq('item_id', item.id).maybeSingle(),
@@ -77,8 +79,10 @@ export default async function ItemPage({ params }: Params) {
     ['태그', 'dc:subject', item.tags?.length ? item.tags.map((t: string) => `#${t}`).join(' ') : null],
   ];
 
-  const images = (files ?? []).filter((f) => f.mime?.startsWith('image/'));
-  const others = (files ?? []).filter((f) => !f.mime?.startsWith('image/'));
+  const originals = (files ?? []).filter((f) => f.role === 'original');
+  const derived = (id: string, role: string) => (files ?? []).find((f) => f.derived_from === id && f.role === role);
+  const images = originals.filter((f) => f.mime?.startsWith('image/'));
+  const others = originals.filter((f) => !f.mime?.startsWith('image/'));
   // 녹취록의 시각은 첫 음성·영상 원본을 따른다.
   const player = others.find((f) => f.mime?.startsWith('audio/') || f.mime?.startsWith('video/'));
   const segments = (transcript?.segments ?? []) as Segment[];
@@ -115,9 +119,28 @@ export default async function ItemPage({ params }: Params) {
               <li key={f.id}>
                 {f.mime?.startsWith('audio/') ? (
                   <audio id={`media-${f.id}`} controls preload="none" src={`/api/media/${f.id}`} />
-                ) : f.mime?.startsWith('video/') ? (
-                  <video id={`media-${f.id}`} controls preload="none" src={`/api/media/${f.id}`} />
-                ) : (
+                ) : f.mime?.startsWith('video/') ? (() => {
+                  // 재생용 사본(H.264·목차 앞)이 있으면 그것을 튼다. 원본은 아래 링크로 받는다.
+                  const stream = derived(f.id, 'stream');
+                  const poster = derived(f.id, 'thumb');
+                  return (
+                    <>
+                      <video id={`media-${f.id}`} controls preload="none" playsInline
+                        src={`/api/media/${stream?.id ?? f.id}`}
+                        poster={poster ? `/api/media/${poster.id}` : undefined} />
+                      {stream && (
+                        <p className="help">
+                          재생용 사본이다.{' '}
+                          <a href={`/api/media/${f.id}`} download>원본 받기</a>
+                          <span className="meta-value">
+                            {' '}{[f.codec?.split(',')[0]?.toUpperCase(), f.width && f.height ? `${f.width}×${f.height}` : null,
+                              f.bytes ? `${Math.round(f.bytes / 1e5) / 10}MB` : null].filter(Boolean).join(' · ')}
+                          </span>
+                        </p>
+                      )}
+                    </>
+                  );
+                })() : (
                   <a href={`/api/media/${f.id}`}>{f.original_filename ?? '원본 보기'}</a>
                 )}
               </li>
