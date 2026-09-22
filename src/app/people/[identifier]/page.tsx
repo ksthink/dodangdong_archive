@@ -7,6 +7,8 @@ import { edtfYear } from '@/lib/edtf';
 import SiteHeader from '@/components/site-header';
 import SiteFooter from '@/components/site-footer';
 import LifeLane, { LaneAxis } from '@/components/life-lane';
+import { thumbsFor } from '@/lib/thumbs';
+import Thumb from '@/components/thumb';
 
 export const dynamic = 'force-dynamic';
 
@@ -19,16 +21,16 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   return { title: data ? `${data.display_name} · 도당동 아카이브` : '도당동 아카이브' };
 }
 
-type ItemRow = { identifier: string; title: string; type: string; created_edtf: string | null; date_verified: boolean };
+type ItemRow = { id: string; identifier: string; title: string; type: string; created_edtf: string | null; date_verified: boolean };
 
-function ItemList({ items, empty }: { items: ItemRow[]; empty: string }) {
+function ItemList({ items, empty, thumbs }: { items: ItemRow[]; empty: string; thumbs: Map<string, string> }) {
   if (!items.length) return <p className="empty">{empty}</p>;
   return (
     <ul className="results">
       {items.map((it) => (
         <li key={it.identifier}>
           <Link href={`/item/${it.identifier}`} className="result">
-            <div className="thumb-empty"><span>{it.type}</span></div>
+            <Thumb fileId={thumbs.get(it.id)} type={it.type} alt={it.title} />
             <div>
               <p className="heading">{it.title}</p>
               <p className="meta-value">
@@ -51,7 +53,7 @@ export default async function PersonPage({ params }: Params) {
   const { data: person } = await supabase.from('person').select('*').eq('identifier', identifier).maybeSingle();
   if (!person) notFound();
 
-  const cols = 'identifier, title, type, created_edtf, created_start, date_verified';
+  const cols = 'id, identifier, title, type, created_edtf, created_start, date_verified';
   const [{ data: periods }, { data: made }, { data: appears }, { data: parents }, { data: children }, { data: spouses }] =
     await Promise.all([
       supabase.from('life_period').select('label, from_edtf, to_edtf, from_year, to_year').eq('person_id', person.id).order('sort_order'),
@@ -65,6 +67,7 @@ export default async function PersonPage({ params }: Params) {
   const one = <T,>(v: unknown): T | null => ((Array.isArray(v) ? v[0] : v) ?? null) as T | null;
   const appearsItems = (appears ?? []).map((r) => one<ItemRow & { created_start: string | null }>(r.item)).filter(Boolean) as (ItemRow & { created_start: string | null })[];
   appearsItems.sort((a, b) => (a.created_start ?? '9999').localeCompare(b.created_start ?? '9999'));
+  const thumbs = await thumbsFor(supabase, [...appearsItems, ...(made ?? [])].map((i) => i.id));
 
   // 관계 상대 중 손님에게 보이지 않는 사람은 RLS 가 null 로 돌려준다 — 이름만 빠지고 링크는 달지 않는다.
   const kin = (rows: { p: unknown }[] | null) =>
@@ -122,12 +125,12 @@ export default async function PersonPage({ params }: Params) {
 
         <section className="section">
           <h2 className="section-title"><span>나오는 자료</span><span className="meta-value">{appearsItems.length}건</span></h2>
-          <ItemList items={appearsItems} empty="이 사람이 나오는 공개 자료가 없다." />
+          <ItemList items={appearsItems} thumbs={thumbs} empty="이 사람이 나오는 공개 자료가 없다." />
         </section>
 
         <section className="section">
           <h2 className="section-title"><span>만든 자료</span><span className="meta-value">{made?.length ?? 0}건</span></h2>
-          <ItemList items={(made ?? []) as ItemRow[]} empty="이 사람이 만든 공개 자료가 없다." />
+          <ItemList items={(made ?? []) as ItemRow[]} thumbs={thumbs} empty="이 사람이 만든 공개 자료가 없다." />
         </section>
 
         <SiteFooter />

@@ -30,7 +30,7 @@ export default async function ItemPage({ params }: Params) {
   if (!item) notFound();
 
   const [{ data: files }, { data: subjects }, { data: people }] = await Promise.all([
-    supabase.from('file').select('id, mime, original_filename, width, height').eq('item_id', item.id).order('created_at'),
+    supabase.from('file').select('id, mime, original_filename, width, height').eq('item_id', item.id).eq('role', 'original').order('created_at'),
     supabase.from('item_subject').select('subject(label)').eq('item_id', item.id),
     supabase.from('item_person').select('role, person(display_name, identifier)').eq('item_id', item.id),
   ]);

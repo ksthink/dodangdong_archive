@@ -29,8 +29,8 @@ export default async function EditItemPage({
       supabase.from('place').select('id, family_name').order('family_name'),
       supabase.from('subject').select('id, label, parent_id').order('sort_order'),
       supabase.from('item_subject').select('subject_id').eq('item_id', item.id),
-      supabase.from('file').select('id, original_filename, mime, bytes, width, height, duration_ms')
-        .eq('item_id', item.id).order('created_at'),
+      supabase.from('file').select('id, original_filename, mime, bytes, width, height, duration_ms, thumbs:file!derived_from(id)')
+        .eq('item_id', item.id).eq('role', 'original').order('created_at'),
       isConnected(),
       supabase.from('person').select('id, display_name').order('born_year', { nullsFirst: false }),
       supabase.from('item_person').select('person_id').eq('item_id', item.id).eq('role', 'depicted'),
@@ -67,8 +67,18 @@ export default async function EditItemPage({
           <ul className="filelist">
             {files.map((f) => {
               const detach = detachFile.bind(null, identifier, f.id);
+              const thumb = (f.thumbs as unknown as { id: string }[] | null)?.[0]?.id;
+              const isImage = f.mime?.startsWith('image/');
               return (
-                <li key={f.id}>
+                <li key={f.id} className={isImage ? 'has-thumb' : ''}>
+                  {isImage && (
+                    <span className="file-thumb">
+                      {thumb
+                        // eslint-disable-next-line @next/next/no-img-element
+                        ? <img src={`/api/media/${thumb}`} alt="" />
+                        : <span className="help">썸네일 없음</span>}
+                    </span>
+                  )}
                   <span>
                     <a href={`/api/media/${f.id}`} target="_blank" rel="noreferrer">
                       {f.original_filename ?? '이름 없음'}
@@ -77,7 +87,8 @@ export default async function EditItemPage({
                     <span className="meta-value">
                       {[f.mime, f.bytes ? `${Math.round(f.bytes / 1024 / 1024 * 10) / 10} MB` : null,
                         f.width && f.height ? `${f.width}×${f.height}` : null,
-                        f.duration_ms ? `${Math.round(f.duration_ms / 1000)}초` : null]
+                        f.duration_ms ? `${Math.round(f.duration_ms / 1000)}초` : null,
+                        isImage ? (thumb ? '썸네일 있음' : '썸네일 없음') : null]
                         .filter(Boolean).join(' · ')}
                     </span>
                   </span>

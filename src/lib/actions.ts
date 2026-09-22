@@ -145,9 +145,15 @@ export async function detachFile(identifier: string, fileId: string) {
     .from('file').select('storage_path, provider, item_id').eq('id', fileId).single();
   if (!file) return;
 
+  // 이 원본에서 만든 썸네일. 행은 derived_from 으로 함께 지워지지만 Drive 파일은 직접 지운다.
+  const { data: derived } = await supabase
+    .from('file').select('storage_path, provider').eq('derived_from', fileId);
+
   const { error } = await supabase.from('file').delete().eq('id', fileId);
   if (error) throw new Error(`원본을 떼지 못했다: ${error.message}`);
-  if (file.provider === 'gdrive') await deleteFile(file.storage_path).catch(() => {});
+  for (const f of [file, ...(derived ?? [])]) {
+    if (f.provider === 'gdrive') await deleteFile(f.storage_path).catch(() => {});
+  }
 
   await supabase.from('event_log').insert({ item_id: file.item_id, action: 'file.remove' });
   revalidatePath(`/admin/items/${identifier}`);

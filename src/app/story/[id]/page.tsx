@@ -65,13 +65,19 @@ export default async function StoryPage({ params }: Params) {
   const allItems = [...all.values()];
 
   const { data: files } = allItems.length
-    ? await supabase.from('file').select('id, item_id, mime, width, height').in('item_id', allItems.map((i) => i.id)).order('created_at')
-    : { data: [] as { id: string; item_id: string; mime: string | null; width: number | null; height: number | null }[] };
+    ? await supabase.from('file').select('id, item_id, role, mime, width, height').in('item_id', allItems.map((i) => i.id)).order('created_at')
+    : { data: [] as { id: string; item_id: string; role: string; mime: string | null; width: number | null; height: number | null }[] };
   const imageOf = new Map<string, { id: string; width: number | null; height: number | null }>();
-  for (const f of files ?? []) if (f.mime?.startsWith('image/') && !imageOf.has(f.item_id)) imageOf.set(f.item_id, f);
+  const thumbOf = new Map<string, { id: string; width: number | null; height: number | null }>();
+  for (const f of files ?? []) {
+    if (!f.mime?.startsWith('image/')) continue;
+    if (f.role === 'original' && !imageOf.has(f.item_id)) imageOf.set(f.item_id, f);
+    if (f.role === 'thumb' && !thumbOf.has(f.item_id)) thumbOf.set(f.item_id, f);
+  }
 
   const Picture = ({ item, square }: { item: Item; square?: boolean }) => {
-    const img = imageOf.get(item.id);
+    // 정사각 격자(사진 묶음)는 썸네일로 가볍게, 한 장 크게는 원본으로.
+    const img = (square && thumbOf.get(item.id)) || imageOf.get(item.id);
     if (!img) return <div className="thumb-empty"><span>{item.type}</span></div>;
     return (
       // eslint-disable-next-line @next/next/no-img-element

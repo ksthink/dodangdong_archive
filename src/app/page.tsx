@@ -1,5 +1,7 @@
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
+import { thumbsFor } from '@/lib/thumbs';
+import Thumb from '@/components/thumb';
 import SiteFooter from '@/components/site-footer';
 
 // 첫 화면은 로그인 화면이 아니라 아카이브 그 자체다.
@@ -35,6 +37,8 @@ export default async function Home() {
       .limit(2),
     supabase.from('item').select('type'),
   ]);
+
+  const thumbs = await thumbsFor(supabase, (items ?? []).map((i) => i.id));
 
   const byType = new Map<string, number>();
   for (const row of counts ?? []) byType.set(row.type, (byType.get(row.type) ?? 0) + 1);
@@ -96,7 +100,7 @@ export default async function Home() {
             {items.map((item) => (
               <li key={item.id} className="card">
                 <Link href={`/item/${item.identifier}`}>
-                  <div className="thumb-empty"><span>{item.type}</span></div>
+                  <Thumb fileId={thumbs.get(item.id)} type={item.type} alt={item.title} />
                   <p className="heading" style={{ marginTop: 'var(--space-3)' }}>{item.title}</p>
                   <p className="meta-value">
                     {item.created_edtf ?? '생산일자 기록 없음'}

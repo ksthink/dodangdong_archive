@@ -1,6 +1,8 @@
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
 import { TYPE_LABEL, ACCESS_LABEL } from '@/lib/labels';
+import { thumbsFor } from '@/lib/thumbs';
+import Thumb from '@/components/thumb';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,8 +15,10 @@ export default async function ItemsPage({
   const supabase = await createClient();
   const { data: items } = await supabase
     .from('item')
-    .select('identifier, title, type, access_level, created_edtf, modified_at')
+    .select('id, identifier, title, type, access_level, created_edtf, modified_at')
     .order('modified_at', { ascending: false });
+
+  const thumbs = await thumbsFor(supabase, (items ?? []).map((i) => i.id));
 
   return (
     <main className="page">
@@ -31,11 +35,12 @@ export default async function ItemsPage({
         {items?.length ? (
           <table className="table">
             <thead>
-              <tr><th>식별자</th><th>제목</th><th>형태</th><th>생산일자</th><th>공개 범위</th></tr>
+              <tr><th aria-label="썸네일" /><th>식별자</th><th>제목</th><th>형태</th><th>생산일자</th><th>공개 범위</th></tr>
             </thead>
             <tbody>
               {items.map((it) => (
                 <tr key={it.identifier}>
+                  <td className="table-thumb"><Thumb fileId={thumbs.get(it.id)} type={it.type} alt={it.title} /></td>
                   <td className="meta-value"><Link href={`/admin/items/${it.identifier}`}>{it.identifier}</Link></td>
                   <td><Link href={`/admin/items/${it.identifier}`}>{it.title}</Link></td>
                   <td className="meta-value">{TYPE_LABEL[it.type] ?? it.type}</td>

@@ -2,6 +2,8 @@ import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
 import { TYPE_LABEL } from '@/lib/labels';
 import { ilikeAny } from '@/lib/search';
+import { thumbsFor } from '@/lib/thumbs';
+import Thumb from '@/components/thumb';
 import SiteHeader from '@/components/site-header';
 import SiteFooter from '@/components/site-footer';
 
@@ -22,7 +24,7 @@ export default async function SearchPage({
   // 비공개 자료는 RLS 가 행 자체를 주지 않는다 — 여기서 따로 거르지 않는다.
   let query = supabase
     .from('item')
-    .select('identifier, title, type, doc_type, description, created_edtf, date_verified, source')
+    .select('id, identifier, title, type, doc_type, description, created_edtf, date_verified, source')
     .order('created_start', { ascending: true, nullsFirst: false })
     .limit(100);
   if (type) query = query.eq('type', type);
@@ -37,6 +39,8 @@ export default async function SearchPage({
     query,
     supabase.from('item').select('type'),
   ]);
+
+  const thumbs = await thumbsFor(supabase, (items ?? []).map((i) => i.id));
 
   const counts = new Map<string, number>();
   for (const row of all ?? []) counts.set(row.type, (counts.get(row.type) ?? 0) + 1);
@@ -107,7 +111,7 @@ export default async function SearchPage({
                 {items.map((it) => (
                   <li key={it.identifier}>
                     <Link href={`/item/${it.identifier}`} className="result">
-                      <div className="thumb-empty"><span>{it.type}</span></div>
+                      <Thumb fileId={thumbs.get(it.id)} type={it.type} alt={it.title} />
                       <div>
                         <p className="heading">{it.title}</p>
                         {it.description && <p className="body-sm clamp2">{it.description}</p>}

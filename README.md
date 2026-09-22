@@ -35,7 +35,14 @@ npm run tokens    # design/tokens.json → src/app/tokens.css
 
 - 메타데이터는 **Supabase**(Postgres + Auth + RLS)에.
 - 원본 파일(사진·음성·영상)은 **Google Drive**에. `file.provider = 'gdrive'` 이면
-  `file.storage_path` 가 Drive 의 file id 다. *(연결 예정)*
+  `file.storage_path` 가 Drive 의 file id 다. 원본은 줄이지 않고 그대로 둔다.
+- 사진을 올리면 브라우저가 목록용 썸네일(긴 변 480px JPEG, `role = 'thumb'`,
+  `derived_from` = 원본)을 함께 만든다. 목록은 썸네일, 상세는 원본을 쓴다.
+  브라우저가 못 여는 형식(TIFF 스캔본)이나 예전에 올린 사진은 이렇게 채운다:
+
+  ```
+  ADMIN_PASSWORD='…' node scripts/backfill-thumbs.mjs   # --dry-run 으로 먼저 볼 수 있다
+  ```
 
 ## 시작하기
 

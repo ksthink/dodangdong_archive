@@ -280,6 +280,13 @@ def main():
             sys.exit(1)
 
     drive_file_ids = list(manifest["drive_file_ids"])
+    # 목록에 없더라도, 지울 자료에 딸린 Drive 파일은 모두 지운다 — 나중에 만든 썸네일이나
+    # 가짜 자료에 손으로 더 올린 파일이 Drive 에 떠돌지 않게.
+    for i in range(0, len(items), 200):
+        chunk = ",".join(str(x) for x in items[i : i + 200])
+        for r in rest.select("file", f"item_id=in.({chunk})&provider=eq.gdrive&select=storage_path"):
+            if r["storage_path"] not in drive_file_ids:
+                drive_file_ids.append(r["storage_path"])
     drive_folder_ids = list(manifest["drive_folder_ids"])
 
     # 루트 폴더는 어떤 경우에도 지우지 않는다
