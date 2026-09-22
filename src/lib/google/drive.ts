@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
+import { createServiceClient } from '@/lib/supabase/admin';
 import { googleClientId, googleClientSecret } from './env';
 
 const TOKEN_URL = 'https://oauth2.googleapis.com/token';
@@ -8,10 +9,18 @@ const UPLOAD = 'https://www.googleapis.com/upload/drive/v3';
 const REFRESH_TOKEN_KEY = 'google_refresh_token';
 const ROOT_FOLDER_KEY = 'google_root_folder_id';
 
-/** app_setting 은 관리자만 읽는다 — 손님 정책이 없어 한 행도 가지 않는다. */
+/**
+ * app_setting 은 RLS 가 관리자만 읽게 막아 둔 표다. 그래도 서버는 손님의 사진 요청에
+ * 답할 때 토큰이 있어야 하므로, 읽기만은 서버 자신의 권한으로 한다.
+ * 이 값은 브라우저로 나가지 않는다 — 부르는 쪽(원본 프록시)이 공개 여부를 먼저 판단한다.
+ */
 async function setting(key: string): Promise<string | null> {
-  const supabase = await createClient();
-  const { data } = await supabase.from('app_setting').select('value').eq('key', key).maybeSingle();
+  // 서버 비밀 키가 아직 없으면 요청한 사람의 권한으로 읽는다 — 관리자는 계속 되고,
+  // 손님만 사진이 막힌 채로 남는다. 배포 순서 때문에 관리자 업로드까지 깨지지 않게.
+  const client = process.env.SUPABASE_SECRET_KEY ? createServiceClient() : await createClient();
+  const { data, error } = await client
+    .from('app_setting').select('value').eq('key', key).maybeSingle();
+  if (error) throw new Error(`설정을 읽지 못했다: ${error.message}`);
   return data?.value ?? null;
 }
 
