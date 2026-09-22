@@ -7,9 +7,9 @@ export const dynamic = 'force-dynamic';
 export default async function ItemsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ 지움?: string }>;
+  searchParams: Promise<{ deleted?: string }>;
 }) {
-  const { 지움 } = await searchParams;
+  const { deleted } = await searchParams;
   const supabase = await createClient();
   const { data: items } = await supabase
     .from('item')
@@ -20,7 +20,7 @@ export default async function ItemsPage({
     <main className="page">
       <h1 className="title">자료 목록</h1>
 
-      {지움 && <p className="notice" role="status">{지움} 을(를) 지웠다. 되돌릴 수 없다.</p>}
+      {deleted && <p className="notice" role="status">{deleted} 을(를) 지웠다. 되돌릴 수 없다.</p>}
 
       <section className="section">
         <h2 className="section-title">

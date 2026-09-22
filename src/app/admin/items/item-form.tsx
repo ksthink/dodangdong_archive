@@ -4,7 +4,7 @@ type Row = Record<string, unknown> | null;
 
 /** 칸 순서는 상세정보 표(MetadataTable)와 같다 — 등록 화면과 읽는 화면이 어긋나지 않게. */
 export default function ItemForm({
-  action, item, bundles, places, subjects, chosen, submitLabel,
+  action, item, bundles, places, subjects, chosen, people = [], chosenPeople = [], submitLabel,
 }: {
   action: (form: FormData) => Promise<void>;
   item?: Row;
@@ -12,6 +12,8 @@ export default function ItemForm({
   places: { id: string; family_name: string }[];
   subjects: { id: string; label: string }[];
   chosen?: string[];
+  people?: { id: string; display_name: string }[];
+  chosenPeople?: string[];
   submitLabel: string;
 }) {
   const v = (k: string) => (item?.[k] as string | null) ?? '';
@@ -33,8 +35,12 @@ export default function ItemForm({
         <textarea className="field" name="description" rows={4} defaultValue={v('description')} />
       </Field>
 
-      <Field label="생산자" code="dc:creator" help="기관이나 모르는 사람은 이름만 쓴다. 미상이면 '미상'.">
-        <input className="field" name="creator" defaultValue={v('creator')} />
+      <Field label="생산자" code="dc:creator" help="등록된 인물이면 고른다. 기관이나 모르는 사람은 아래에 이름만 쓴다.">
+        <select className="field" name="creator_person_id" defaultValue={v('creator_person_id')}>
+          <option value="">등록된 인물 아님</option>
+          {people.map((p) => <option key={p.id} value={p.id}>{p.display_name}</option>)}
+        </select>
+        <input className="field" name="creator" defaultValue={v('creator')} placeholder="이름만 — 예: 군청, 미상" />
       </Field>
 
       <Field label="생산일자" code="dc:date" help="모르면 1978? · 197X · 1975/1979 처럼 쓴다.">
@@ -74,6 +80,21 @@ export default function ItemForm({
             </label>
           ))}
         </div>
+      </Field>
+
+      <Field label="등장인물" code="dc:subject" span help="이 자료에 나오는 사람. 등록된 인물만 고를 수 있다.">
+        {people.length ? (
+          <div className="chips">
+            {people.map((p) => (
+              <label key={p.id} className="chip">
+                <input type="checkbox" name="person_id" value={p.id} defaultChecked={chosenPeople.includes(p.id)} />
+                {p.display_name}
+              </label>
+            ))}
+          </div>
+        ) : (
+          <p className="help">아직 등록한 인물이 없다. 관리 → 인물에서 먼저 등록한다.</p>
+        )}
       </Field>
 
       <Field label="장소" code="dcterms:spatial">

@@ -13,16 +13,17 @@ export default async function EditItemPage({
   params, searchParams,
 }: {
   params: Promise<{ identifier: string }>;
-  searchParams: Promise<{ 저장됨?: string; 오류?: string }>;
+  searchParams: Promise<{ saved?: string; error?: string }>;
 }) {
   const { identifier } = await params;
-  const { 저장됨, 오류 } = await searchParams;
+  const { saved, error } = await searchParams;
   const supabase = await createClient();
 
   const { data: item } = await supabase.from('item').select('*').eq('identifier', identifier).maybeSingle();
   if (!item) notFound();
 
-  const [{ data: bundles }, { data: places }, { data: subjects }, { data: chosen }, { data: files }, driveReady] =
+  const [{ data: bundles }, { data: places }, { data: subjects }, { data: chosen }, { data: files }, driveReady,
+    { data: people }, { data: depicted }] =
     await Promise.all([
       supabase.from('bundle').select('id, identifier, title').order('identifier'),
       supabase.from('place').select('id, family_name').order('family_name'),
@@ -31,6 +32,8 @@ export default async function EditItemPage({
       supabase.from('file').select('id, original_filename, mime, bytes, width, height, duration_ms')
         .eq('item_id', item.id).order('created_at'),
       isConnected(),
+      supabase.from('person').select('id, display_name').order('born_year', { nullsFirst: false }),
+      supabase.from('item_person').select('person_id').eq('item_id', item.id).eq('role', 'depicted'),
     ]);
 
   const save = updateItem.bind(null, identifier);
@@ -41,14 +44,16 @@ export default async function EditItemPage({
       <p className="meta-value">{identifier}</p>
       <h1 className="title">{item.title}</h1>
 
-      {저장됨 && <p className="notice" role="status">저장했다.</p>}
-      {오류 && <p className="notice" role="alert">{오류}</p>}
+      {saved && <p className="notice" role="status">저장했다.</p>}
+      {error && <p className="notice" role="alert">{error}</p>}
 
       <ItemForm
         action={save}
         item={item}
         bundles={bundles ?? []} places={places ?? []} subjects={subjects ?? []}
         chosen={chosen?.map((c) => c.subject_id) ?? []}
+        people={people ?? []}
+        chosenPeople={depicted?.map((d) => d.person_id) ?? []}
         submitLabel="고친 것 저장"
       />
 

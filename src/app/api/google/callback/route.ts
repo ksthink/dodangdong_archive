@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic';
 
 const back = (request: NextRequest, message?: string) => {
   const url = new URL('/admin/drive', request.url);
-  if (message) url.searchParams.set('오류', message);
+  if (message) url.searchParams.set('error', message);
   return NextResponse.redirect(url);
 };
 
@@ -52,7 +52,7 @@ export async function GET(request: NextRequest) {
 
   await saveRefreshToken(json.refresh_token);
 
-  const response = NextResponse.redirect(new URL('/admin/drive?연결됨=1', request.url));
+  const response = NextResponse.redirect(new URL('/admin/drive?connected=1', request.url));
   response.cookies.delete('google_oauth_state');
   return response;
 }

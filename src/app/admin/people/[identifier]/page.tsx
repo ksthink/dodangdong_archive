@@ -1,0 +1,128 @@
+import Link from 'next/link';
+import { notFound } from 'next/navigation';
+import { createClient } from '@/lib/supabase/server';
+import {
+  updatePerson, deletePerson, addLifePeriod, removeLifePeriod, addRelation, removeRelation,
+} from '@/lib/people-actions';
+import PersonForm from '../person-form';
+import DeleteBox from '../../items/[identifier]/delete-box';
+
+export const dynamic = 'force-dynamic';
+
+const KIND = { parent: '부모', spouse: '배우자' } as const;
+
+export default async function EditPersonPage({
+  params, searchParams,
+}: {
+  params: Promise<{ identifier: string }>;
+  searchParams: Promise<{ saved?: string; error?: string }>;
+}) {
+  const { identifier } = await params;
+  const { saved, error } = await searchParams;
+  const supabase = await createClient();
+
+  const { data: person } = await supabase.from('person').select('*').eq('identifier', identifier).maybeSingle();
+  if (!person) notFound();
+
+  const [{ data: periods }, { data: others }, { data: out }, { data: into }] = await Promise.all([
+    supabase.from('life_period').select('*').eq('person_id', person.id).order('sort_order'),
+    supabase.from('person').select('id, display_name').neq('id', person.id).order('born_year'),
+    // 이 사람에게서 나가는 관계: parent 면 상대가 이 사람의 부모
+    supabase.from('person_relation').select('to_person_id, kind, person:to_person_id(display_name)').eq('from_person_id', person.id),
+    // 이 사람에게 들어오는 parent: 상대가 이 사람의 자녀
+    supabase.from('person_relation').select('from_person_id, kind, person:from_person_id(display_name)')
+      .eq('to_person_id', person.id).eq('kind', 'parent'),
+  ]);
+
+  const name = (v: unknown) => (Array.isArray(v) ? v[0] : v as { display_name: string } | null)?.display_name ?? '?';
+
+  const save = updatePerson.bind(null, identifier);
+  const remove = deletePerson.bind(null, identifier);
+  const addPeriod = addLifePeriod.bind(null, identifier, person.id);
+  const addRel = addRelation.bind(null, identifier, person.id);
+
+  return (
+    <main className="page">
+      <p className="meta-value">{identifier}</p>
+      <h1 className="title">{person.display_name}</h1>
+      {saved && <p className="notice" role="status">저장했다.</p>}
+      {error && <p className="notice" role="alert">{error}</p>}
+
+      <PersonForm action={save} person={person} submitLabel="고친 것 저장" />
+
+      <section className="section">
+        <h2 className="section-title">
+          <span>인생 시기</span><span className="label-code">dcterms:temporal</span>
+        </h2>
+        <p className="help" style={{ marginBottom: 'var(--space-4)' }}>
+          시기분류의 하위 항목이 되고, 연표에서 이 사람의 띠가 된다. 예: 유년기 · 혼인과 분가 · 자녀 양육기
+        </p>
+        {periods?.length ? (
+          <ul className="filelist">
+            {periods.map((p) => (
+              <li key={p.id}>
+                <span>{p.label} <span className="meta-value">{p.from_edtf ?? '?'}–{p.to_edtf ?? ''}</span></span>
+                <form action={removeLifePeriod.bind(null, identifier, p.id)}>
+                  <button className="button is-secondary" type="submit">빼기</button>
+                </form>
+              </li>
+            ))}
+          </ul>
+        ) : null}
+        <form action={addPeriod} className="inline-form">
+          <input className="field" name="label" placeholder="시기 이름" required />
+          <input className="field is-mono" name="from_edtf" placeholder="1936" />
+          <input className="field is-mono" name="to_edtf" placeholder="1955 (비우면 지금까지)" />
+          <button className="button is-secondary" type="submit">더하기</button>
+        </form>
+      </section>
+
+      <section className="section">
+        <h2 className="section-title">가족 관계</h2>
+        {out?.length || into?.length ? (
+          <ul className="filelist">
+            {(out ?? []).map((r) => (
+              <li key={`o-${r.to_person_id}-${r.kind}`}>
+                <span>{name(r.person)} <span className="meta-value">{KIND[r.kind as keyof typeof KIND]}</span></span>
+                <form action={removeRelation.bind(null, identifier, person.id, r.to_person_id, r.kind)}>
+                  <button className="button is-secondary" type="submit">빼기</button>
+                </form>
+              </li>
+            ))}
+            {(into ?? []).map((r) => (
+              <li key={`i-${r.from_person_id}`}>
+                <span>{name(r.person)} <span className="meta-value">자녀</span></span>
+                <form action={removeRelation.bind(null, identifier, r.from_person_id, person.id, 'parent')}>
+                  <button className="button is-secondary" type="submit">빼기</button>
+                </form>
+              </li>
+            ))}
+          </ul>
+        ) : null}
+        {others?.length ? (
+          <form action={addRel} className="inline-form">
+            <select className="field" name="other_id" required>
+              {others.map((o) => <option key={o.id} value={o.id}>{o.display_name}</option>)}
+            </select>
+            <span className="body-sm">은(는) 이 사람의</span>
+            <select className="field" name="kind">
+              <option value="parent">부모</option>
+              <option value="child">자녀</option>
+              <option value="spouse">배우자</option>
+            </select>
+            <button className="button is-secondary" type="submit">잇기</button>
+          </form>
+        ) : (
+          <p className="help">다른 인물을 더 등록하면 관계를 이을 수 있다.</p>
+        )}
+      </section>
+
+      <section className="section">
+        <h2 className="section-title">지우기</h2>
+        <DeleteBox identifier={identifier} action={remove} />
+      </section>
+
+      <p style={{ marginTop: 'var(--space-8)' }}><Link href="/admin/people">← 인물 목록</Link></p>
+    </main>
+  );
+}

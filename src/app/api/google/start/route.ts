@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
   } catch (cause) {
     const message = cause instanceof Error ? cause.message : '설정을 읽지 못했다.';
     const url = new URL('/admin/drive', request.url);
-    url.searchParams.set('오류', `${message} 값을 넣은 뒤에는 반드시 다시 배포해야 반영된다.`);
+    url.searchParams.set('error', `${message} 값을 넣은 뒤에는 반드시 다시 배포해야 반영된다.`);
     return NextResponse.redirect(url);
   }
 

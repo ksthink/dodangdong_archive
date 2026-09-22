@@ -7,10 +7,11 @@ export const dynamic = 'force-dynamic';
 
 export default async function NewItemPage() {
   const supabase = await createClient();
-  const [{ data: bundles }, { data: places }, { data: subjects }] = await Promise.all([
+  const [{ data: bundles }, { data: places }, { data: subjects }, { data: people }] = await Promise.all([
     supabase.from('bundle').select('id, identifier, title').order('identifier'),
     supabase.from('place').select('id, family_name').order('family_name'),
     supabase.from('subject').select('id, label').is('parent_id', null).order('sort_order'),
+    supabase.from('person').select('id, display_name').order('born_year', { nullsFirst: false }),
   ]);
 
   return (
@@ -27,7 +28,7 @@ export default async function NewItemPage() {
       {bundles?.length ? (
         <ItemForm
           action={createItem}
-          bundles={bundles} places={places ?? []} subjects={subjects ?? []}
+          bundles={bundles} places={places ?? []} subjects={subjects ?? []} people={people ?? []}
           submitLabel="저장"
         />
       ) : (

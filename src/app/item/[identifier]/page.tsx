@@ -24,7 +24,7 @@ export default async function ItemPage({ params }: Params) {
   // 비공개 자료는 손님에게 행이 오지 않는다 — 없는 자료와 똑같이 404 다.
   const { data: item } = await supabase
     .from('item')
-    .select('*, bundle(identifier, title, source), place(family_name, admin_name)')
+    .select('*, bundle(identifier, title, source), place(family_name, admin_name), creator_person:creator_person_id(display_name, identifier)')
     .eq('identifier', identifier)
     .maybeSingle();
   if (!item) notFound();
@@ -39,6 +39,8 @@ export default async function ItemPage({ params }: Params) {
   const one = <T,>(v: unknown): T | null => ((Array.isArray(v) ? v[0] : v) ?? null) as T | null;
   const bundle = one<{ identifier: string; title: string; source: string }>(item.bundle);
   const place = one<{ family_name: string; admin_name: string | null }>(item.place);
+  // 등록된 인물이 생산자면 그 이름을, 아니면 적어 둔 이름(기관·미상)을 쓴다.
+  const creatorPerson = one<{ display_name: string; identifier: string }>(item.creator_person);
   const subjectLabels = (subjects ?? []).map((s) => one<{ label: string }>(s.subject)?.label).filter(Boolean);
   const depicted = (people ?? [])
     .filter((p) => p.role === 'depicted')
@@ -47,7 +49,7 @@ export default async function ItemPage({ params }: Params) {
 
   // 상세정보 표 — README 가 정한 순서. 값이 없는 행은 숨긴다.
   const rows: [string, string, React.ReactNode][] = [
-    ['생산자', 'dc:creator', item.creator],
+    ['생산자', 'dc:creator', creatorPerson?.display_name ?? item.creator],
     ['생산일자', 'dc:date', item.created_edtf && (
       <>{item.created_edtf}{item.date_verified && <span className="verified">확인됨</span>}</>
     )],

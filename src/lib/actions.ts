@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { createClient, getAdmin } from '@/lib/supabase/server';
 import { parseEdtf } from '@/lib/edtf';
+import { withQuery } from '@/lib/url';
 import { deleteFile } from '@/lib/google/drive';
 
 /** 쓰기는 관리자만. RLS 가 다시 한 번 막지만, 여기서 먼저 끊는다. */
@@ -30,6 +31,7 @@ function itemFields(form: FormData) {
     doc_type: text(form, 'doc_type'),
     description: text(form, 'description'),
     creator: text(form, 'creator'),
+    creator_person_id: text(form, 'creator_person_id'),
     contributor: text(form, 'contributor'),
     publisher: text(form, 'publisher'),
     created_edtf: edtf,
@@ -51,6 +53,16 @@ function itemFields(form: FormData) {
   };
 }
 
+/** 등장인물(dc:subject). 등록된 인물만 — 기관이나 모르는 사람은 설명에 쓴다. */
+async function setPeople(itemId: string, form: FormData) {
+  const supabase = await createClient();
+  const ids = form.getAll('person_id').map(String).filter(Boolean);
+  await supabase.from('item_person').delete().eq('item_id', itemId).eq('role', 'depicted');
+  if (ids.length) {
+    await supabase.from('item_person').insert(ids.map((person_id) => ({ item_id: itemId, person_id, role: 'depicted' })));
+  }
+}
+
 async function setSubjects(itemId: string, form: FormData) {
   const supabase = await createClient();
   const ids = form.getAll('subject_id').map(String).filter(Boolean);
@@ -68,6 +80,7 @@ export async function createItem(form: FormData) {
   if (error) throw new Error(`자료를 저장하지 못했다: ${error.message}`);
 
   await setSubjects(data.id, form);
+  await setPeople(data.id, form);
   await supabase.from('event_log').insert({ item_id: data.id, action: 'create' });
 
   revalidatePath('/admin/items');
@@ -83,11 +96,12 @@ export async function updateItem(identifier: string, form: FormData) {
   if (error) throw new Error(`자료를 고치지 못했다: ${error.message}`);
 
   await setSubjects(data.id, form);
+  await setPeople(data.id, form);
   await supabase.from('event_log').insert({ item_id: data.id, action: 'update' });
 
   revalidatePath('/admin/items');
   revalidatePath(`/admin/items/${identifier}`);
-  redirect(`/admin/items/${identifier}?저장됨=1`);
+  redirect(withQuery(`/admin/items/${identifier}`, { saved: '1' }));
 }
 
 /**
@@ -98,7 +112,7 @@ export async function updateItem(identifier: string, form: FormData) {
 export async function deleteItem(identifier: string, form: FormData) {
   await requireAdmin();
   if (text(form, 'confirm') !== identifier) {
-    redirect(`/admin/items/${identifier}?오류=식별자가+맞지+않다`);
+    redirect(withQuery(`/admin/items/${identifier}`, { error: '식별자가 맞지 않다.' }));
   }
 
   const supabase = await createClient();
@@ -119,7 +133,7 @@ export async function deleteItem(identifier: string, form: FormData) {
   await supabase.from('event_log').insert({ action: 'delete', before });
 
   revalidatePath('/admin/items');
-  redirect('/admin/items?지움=' + encodeURIComponent(identifier));
+  redirect(withQuery('/admin/items', { deleted: identifier }));
 }
 
 /** 자료에서 원본 하나를 뗀다. Drive 의 파일도 함께 지운다. */

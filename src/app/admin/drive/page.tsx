@@ -8,9 +8,9 @@ export const dynamic = 'force-dynamic';
 export default async function DrivePage({
   searchParams,
 }: {
-  searchParams: Promise<{ 연결됨?: string; 오류?: string }>;
+  searchParams: Promise<{ connected?: string; error?: string }>;
 }) {
-  const { 연결됨, 오류 } = await searchParams;
+  const { connected: justConnected, error } = await searchParams;
   const connected = await isConnected();
 
   const supabase = await createClient();
@@ -30,8 +30,8 @@ export default async function DrivePage({
         이 앱은 <b>스스로 만든 파일에만</b> 닿는다 — 드라이브의 다른 파일은 보지 못한다.
       </p>
 
-      {연결됨 && <p className="notice" role="status">연결했다.</p>}
-      {오류 && <p className="notice" role="alert">{오류}</p>}
+      {justConnected && <p className="notice" role="status">연결했다.</p>}
+      {error && <p className="notice" role="alert">{error}</p>}
 
       <section className="section">
         <h2 className="section-title">

@@ -250,3 +250,7 @@ a:hover { text-decoration: underline; text-decoration-thickness: var(--stroke); 
 @media (min-width: 560px) { .meta-row { grid-template-columns: 220px 1fr; } }
 .meta-row dt { background: var(--paper-sunken); padding: var(--space-3); display: flex; justify-content: space-between; gap: var(--space-2); font: var(--text-body-sm); font-weight: 700; }
 .meta-row dd { margin: 0; padding: var(--space-3); font: var(--text-body-sm); }
+
+/* 한 줄 양식 — 시기·관계 더하기 */
+.inline-form { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; margin-top: var(--space-4); max-width: var(--measure); }
+.inline-form .field { width: auto; flex: 1 1 140px; }
