@@ -5,6 +5,7 @@ import { resolveHero } from '@/lib/hero';
 import Hero from '@/components/hero';
 import { thumbsFor } from '@/lib/thumbs';
 import Thumb from '@/components/thumb';
+import SiteHeader from '@/components/site-header';
 import SiteFooter from '@/components/site-footer';
 
 // 첫 화면은 로그인 화면이 아니라 아카이브 그 자체다.
@@ -50,80 +51,83 @@ export default async function Home() {
   const total = counts?.length ?? 0;
 
   return (
-    <main className="page">
-      <h1 className="display">도당동 아카이브</h1>
-      <p className="measure" style={{ marginTop: 'var(--space-4)' }}>
-        한 집안의 사진·편지·음성·영상과 그에 얽힌 사건을 모아 기술해 둔 곳이다.
-        지금 공개된 자료는 {total}건이다.
-      </p>
+    <>
+      <SiteHeader />
+      <main className="page">
+        <h1 className="display">도당동 아카이브</h1>
+        <p className="measure" style={{ marginTop: 'var(--space-4)' }}>
+          한 집안의 사진·편지·음성·영상과 그에 얽힌 사건을 모아 기술해 둔 곳이다.
+          지금 공개된 자료는 {total}건이다.
+        </p>
 
-      <Hero slides={heroSlides} />
+        <Hero slides={heroSlides} />
 
-      <form action="/search" style={{ marginTop: 'var(--space-8)', display: 'flex', gap: 'var(--space-2)' }}>
-        <input className="field" type="search" name="q" placeholder="자료 찾기" aria-label="자료 찾기" />
-        <button className="button" type="submit">찾기</button>
-      </form>
+        <form action="/search" style={{ marginTop: 'var(--space-8)', display: 'flex', gap: 'var(--space-2)' }}>
+          <input className="field" type="search" name="q" placeholder="자료 찾기" aria-label="자료 찾기" />
+          <button className="button" type="submit">찾기</button>
+        </form>
 
-      <section className="section">
-        <h2 className="section-title">
-          형태분류 <span className="meta-value">전체 {total}건</span>
-        </h2>
-        <ul className="grid">
-          {Object.entries(TYPE_LABEL).map(([code, label]) => (
-            <li key={code} className="card">
-              <Link href={`/search?type=${code}`}>
-                <span className="meta-label">{code}</span>
-                <p className="heading" style={{ marginTop: 'var(--space-2)' }}>{label}</p>
-                <p className="meta-value">{byType.get(code) ?? 0}건</p>
-              </Link>
-            </li>
-          ))}
-        </ul>
-      </section>
-
-      <section className="section">
-        <h2 className="section-title">이야기</h2>
-        {stories?.length ? (
+        <section className="section">
+          <h2 className="section-title">
+            형태분류 <span className="meta-value">전체 {total}건</span>
+          </h2>
           <ul className="grid">
-            {stories.map((s) => (
-              <li key={s.id} className="card">
-                <Link href={`/story/${s.id}`}>
-                  <p className="heading">{s.title}</p>
-                  {s.period_edtf && <p className="meta-value">{s.period_edtf}</p>}
-                  {s.summary && <p className="body-sm" style={{ marginTop: 'var(--space-2)' }}>{s.summary}</p>}
+            {Object.entries(TYPE_LABEL).map(([code, label]) => (
+              <li key={code} className="card">
+                <Link href={`/search?type=${code}`}>
+                  <span className="meta-label">{code}</span>
+                  <p className="heading" style={{ marginTop: 'var(--space-2)' }}>{label}</p>
+                  <p className="meta-value">{byType.get(code) ?? 0}건</p>
                 </Link>
               </li>
             ))}
           </ul>
-        ) : (
-          <p className="empty">아직 엮은 이야기가 없다.</p>
-        )}
-      </section>
+        </section>
 
-      <section className="section">
-        <h2 className="section-title">최근 등록</h2>
-        {items?.length ? (
-          <ul className="grid">
-            {items.map((item) => (
-              <li key={item.id} className="card">
-                <Link href={`/item/${item.identifier}`}>
-                  <Thumb fileId={thumbs.get(item.id)} type={item.type} alt={item.title} />
-                  <p className="heading" style={{ marginTop: 'var(--space-3)' }}>{item.title}</p>
-                  <p className="meta-value">
-                    {item.created_edtf ?? '생산일자 기록 없음'}
-                    {item.date_verified && <span className="verified">확인됨</span>}
-                  </p>
-                  <p className="meta-value">{item.identifier}</p>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="empty">아직 공개된 자료가 없다.</p>
-        )}
-      </section>
+        <section className="section">
+          <h2 className="section-title">이야기</h2>
+          {stories?.length ? (
+            <ul className="grid">
+              {stories.map((s) => (
+                <li key={s.id} className="card">
+                  <Link href={`/story/${s.id}`}>
+                    <p className="heading">{s.title}</p>
+                    {s.period_edtf && <p className="meta-value">{s.period_edtf}</p>}
+                    {s.summary && <p className="body-sm" style={{ marginTop: 'var(--space-2)' }}>{s.summary}</p>}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="empty">아직 엮은 이야기가 없다.</p>
+          )}
+        </section>
 
-      <SiteFooter />
-    </main>
+        <section className="section">
+          <h2 className="section-title">최근 등록</h2>
+          {items?.length ? (
+            <ul className="grid">
+              {items.map((item) => (
+                <li key={item.id} className="card">
+                  <Link href={`/item/${item.identifier}`}>
+                    <Thumb fileId={thumbs.get(item.id)} type={item.type} alt={item.title} />
+                    <p className="heading" style={{ marginTop: 'var(--space-3)' }}>{item.title}</p>
+                    <p className="meta-value">
+                      {item.created_edtf ?? '생산일자 기록 없음'}
+                      {item.date_verified && <span className="verified">확인됨</span>}
+                    </p>
+                    <p className="meta-value">{item.identifier}</p>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="empty">아직 공개된 자료가 없다.</p>
+          )}
+        </section>
+
+        <SiteFooter />
+      </main>
+    </>
   );
 }

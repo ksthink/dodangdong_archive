@@ -215,8 +215,11 @@ a:hover { text-decoration: underline; text-decoration-thickness: var(--stroke); 
 /* 공개 화면 머리 */
 .site-head { max-width: var(--page-max); margin: 0 auto; padding: var(--space-4); display: flex; justify-content: space-between; align-items: baseline; gap: var(--space-4); border-bottom: var(--stroke) solid var(--rule); }
 @media (min-width: 900px) { .site-head { padding-inline: var(--space-16); } }
-.site-name { font: var(--text-heading); }
-.site-nav { display: flex; gap: var(--space-4); font: var(--text-body-sm); }
+/* 좁으면 메뉴가 이름 아래 줄로 내려간다 — 낱말 가운데서 끊지 않는다 */
+.site-head { flex-wrap: wrap; row-gap: var(--space-2); }
+.site-name { font: var(--text-heading); white-space: nowrap; }
+.site-nav { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-4); font: var(--text-body-sm); }
+.site-nav a { white-space: nowrap; }
 
 /* 찾기 */
 .searchbar { display: flex; gap: var(--space-2); margin-top: var(--space-6); max-width: var(--measure); }
