@@ -9,6 +9,7 @@ export default function SiteHeader() {
         <Link href="/search">자료 찾기</Link>
         <Link href="/people">인물</Link>
         <Link href="/chronicle">연표</Link>
+        <Link href="/story">이야기</Link>
       </nav>
     </header>
   );

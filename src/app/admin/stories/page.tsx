@@ -8,11 +8,12 @@ export const dynamic = 'force-dynamic';
 export default async function StoriesPage({ searchParams }: { searchParams: Promise<{ deleted?: string }> }) {
   const { deleted } = await searchParams;
   const supabase = await createClient();
-  const { data: stories } = await supabase
+  const { data: stories, error } = await supabase
     .from('collection')
-    .select('id, title, period_edtf, access_level, modified_at, curation_block(count)')
+    .select('id, title, period_edtf, access_level, modified_at, curation_block!curation_block_collection_id_fkey(count)')
     .eq('kind', 'story')
     .order('modified_at', { ascending: false });
+  if (error) throw new Error(`이야기 목록을 읽지 못했다: ${error.message}`);
 
   return (
     <main className="page">

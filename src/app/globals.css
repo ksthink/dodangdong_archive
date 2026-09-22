@@ -317,3 +317,24 @@ a:hover { text-decoration: underline; text-decoration-thickness: var(--stroke); 
 .block-edit { display: grid; gap: var(--space-2); }
 .block-edit .button { justify-self: start; }
 ul.help { margin-top: var(--space-2); display: grid; gap: var(--space-1); }
+
+/* 이야기 */
+.story-grid { display: grid; gap: var(--space-6); grid-template-columns: 1fr; }
+@media (min-width: 760px) { .story-grid { grid-template-columns: repeat(2, 1fr); } }
+.story-card { display: grid; gap: var(--space-2); }
+.story-card:hover { text-decoration: none; }
+.story { display: grid; gap: var(--space-8); margin-top: var(--space-12); }
+.story-heading { padding-top: var(--space-3); border-top: var(--stroke-heavy) solid var(--ink); max-width: var(--measure); }
+.story-record { margin: 0; display: grid; gap: var(--space-2); max-width: var(--measure); }
+.story-record.is-wide { max-width: 880px; }
+.story-record img { border: var(--stroke) solid var(--ink); width: 100%; height: auto; }
+.story-record img.is-square { aspect-ratio: 1; object-fit: cover; }
+/* 구술 인용 — 디자인 시스템이 정한 왼쪽 4px 선과 들어간 면 */
+.story-quote { margin: 0; max-width: var(--measure); border-left: var(--stroke-heavy) solid var(--ink); background: var(--paper-sunken); padding: var(--space-4) var(--space-6); }
+.story-quote p { font: var(--text-body); }
+.story-quote footer { margin-top: var(--space-3); }
+.story-timeline { max-width: var(--measure); display: grid; gap: var(--space-3); }
+.tl-year { display: grid; grid-template-columns: 88px 1fr; gap: var(--space-4); border-top: var(--stroke) solid var(--rule); padding-top: var(--space-2); }
+.tl-dot { display: inline-block; width: 11px; height: 11px; border: var(--stroke) solid var(--ink); margin-right: var(--space-2); vertical-align: -1px; }
+.related { display: grid; gap: var(--space-2); max-width: var(--measure); }
+.related li { border-bottom: var(--stroke) solid var(--rule); padding-bottom: var(--space-2); font: var(--text-body-sm); }
