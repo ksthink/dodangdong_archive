@@ -74,7 +74,7 @@ export default async function DrivePage({
         {rootId ? (
           <>
             <p className="measure body-sm">
-              원본은 Drive 의 &lsquo;도당동 아카이브&rsquo; 폴더 안에 묶음마다 폴더 하나로 들어 있다.
+              원본은 Drive 의 <span className="meta-value">dodangdong-archive</span> 폴더 안에 묶음마다 폴더 하나(<span className="meta-value">DC-002</span> 처럼 식별자 이름)로 들어 있다.
               폴더를 만든 Google 계정으로 로그인해 있어야 열린다. 새 창에서 열린다.
             </p>
             <p style={{ marginTop: 'var(--space-4)' }}>
@@ -101,7 +101,7 @@ export default async function DrivePage({
             </table>
           </>
         ) : (
-          <p className="empty">아직 폴더가 없다. 첫 원본을 올리면 Drive 에 &lsquo;도당동 아카이브&rsquo; 폴더가 생긴다.</p>
+          <p className="empty">아직 폴더가 없다. 첫 원본을 올리면 Drive 에 <span className="meta-value">dodangdong-archive</span> 폴더가 생긴다.</p>
         )}
       </section>
 

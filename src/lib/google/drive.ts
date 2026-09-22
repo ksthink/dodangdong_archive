@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/admin';
 import { googleClientId, googleClientSecret } from './env';
+import { ROOT_FOLDER_NAME, bundleFolderName } from './naming';
 
 const TOKEN_URL = 'https://oauth2.googleapis.com/token';
 const API = 'https://www.googleapis.com/drive/v3';
@@ -98,7 +99,8 @@ async function createFolder(name: string, parent?: string): Promise<string> {
   return (await res.json()).id as string;
 }
 
-const ROOT_FOLDER_NAME = '도당동 아카이브';
+// 이름을 영문으로 바꾸기 전에 만든 바깥 폴더 — 저장된 id 가 없을 때 이것도 찾아 다시 쓴다
+const LEGACY_ROOT_FOLDER_NAME = '도당동 아카이브';
 
 /** 이 앱이 볼 수 있는 폴더 중 같은 이름이 이미 있으면 그것을 쓴다. */
 async function findFolder(name: string): Promise<string | null> {
@@ -116,7 +118,7 @@ export async function rootFolder(): Promise<string> {
   const saved = await setting(ROOT_FOLDER_KEY);
   if (saved) return saved;
 
-  const existing = await findFolder(ROOT_FOLDER_NAME);
+  const existing = (await findFolder(ROOT_FOLDER_NAME)) ?? (await findFolder(LEGACY_ROOT_FOLDER_NAME));
   const id = existing ?? (await createFolder(ROOT_FOLDER_NAME));
   await putSetting(ROOT_FOLDER_KEY, id);
   return id;
@@ -142,11 +144,11 @@ export const folderUrl = (id: string) => `https://drive.google.com/drive/folders
 export async function bundleFolder(bundleId: string): Promise<string> {
   const supabase = await createClient();
   const { data: bundle } = await supabase
-    .from('bundle').select('identifier, title, drive_folder_id').eq('id', bundleId).single();
+    .from('bundle').select('identifier, drive_folder_id').eq('id', bundleId).single();
   if (!bundle) throw new Error('묶음을 찾지 못했다.');
   if (bundle.drive_folder_id) return bundle.drive_folder_id;
 
-  const id = await createFolder(`${bundle.identifier} ${bundle.title}`, await rootFolder());
+  const id = await createFolder(bundleFolderName(bundle.identifier), await rootFolder());
   await supabase.from('bundle').update({ drive_folder_id: id }).eq('id', bundleId);
   return id;
 }

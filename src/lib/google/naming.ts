@@ -8,8 +8,12 @@
  * 이름에는 한글·공백이 들어가지 않는다 — 영문 식별자, 숫자, 영문 확장자만(ASCII).
  * 날짜는 올린 시각이지 자료가 만들어진 날(dc:date)이 아니다.
  * 올린 원래 파일 이름은 file.original_filename 에 따로 남는다.
+ * 폴더도 같다: 바깥 폴더 dodangdong-archive, 그 안에 묶음마다 DC-003 처럼 식별자만.
  * scripts/rename-drive-files.mjs 가 같은 규칙을 쓴다 — 바꾸면 함께 바꾼다.
  */
+
+/** 아카이브 전체가 들어가는 바깥 폴더 */
+export const ROOT_FOLDER_NAME = 'dodangdong-archive';
 
 const STAMP = new Intl.DateTimeFormat('en-CA', {
   timeZone: 'Asia/Seoul',
@@ -39,6 +43,11 @@ function ascii(name: string): string {
 export function originalName(identifier: string, at: Date, ext: string, n = 1): string {
   const base = `${identifier}_${uploadStamp(at)}`;
   return ascii(`${n > 1 ? `${base}-${n}` : base}${ext}`);
+}
+
+/** 묶음 폴더 이름 — 식별자만(DC-003). 묶음 제목은 한글이라 넣지 않는다. */
+export function bundleFolderName(identifier: string): string {
+  return ascii(identifier);
 }
 
 /** 썸네일 이름 — 원본의 Drive 이름에서 확장자를 떼고 _thumb.jpg */

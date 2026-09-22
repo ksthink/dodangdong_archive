@@ -1,12 +1,17 @@
-// 이미 Drive 에 올린 원본·썸네일의 이름을 지금 규칙으로 바꾼다.
+// 이미 Drive 에 올린 원본·썸네일과 폴더의 이름을 지금 규칙으로 바꾼다.
+//
+//   dodangdong-archive/                바깥 폴더
+//     DC-003/                          묶음 폴더 — 식별자만
 //
 //   DA-0017_20260922190012.jpg         원본 — 식별자_올린 시각(한국 시간, 초까지)
 //   DA-0017_20260922190012-2.jpg       같은 자료에서 같은 초에 올린 것은 -2, -3 …
 //   DA-0017_20260922190012_thumb.jpg   썸네일 — 원본 이름 + _thumb
 //
 // 규칙은 src/lib/google/naming.ts 와 같다 — 바꾸면 함께 바꾼다.
-// 올린 시각은 file.created_at, 확장자는 올린 원래 이름(original_filename)에서 딴다.
-// 파일 id 는 그대로이므로 아카이브의 링크는 깨지지 않는다. 이미 규칙대로인 파일은 건너뛴다.
+// 이미 규칙에 맞는 이름(식별자_14자리 시각[-순번].확장자)은 그대로 둔다 — 앱은 업로드를 시작한
+// 시각으로 이름을 짓는데, 표의 created_at 은 다 올린 뒤의 시각이라 큰 파일일수록 몇 초씩 다르다.
+// 규칙에 맞지 않는 원본만 created_at 으로 새로 짓고, 확장자는 올린 원래 이름에서 딴다.
+// 파일 id 는 그대로이므로 아카이브의 링크는 깨지지 않는다.
 //
 //   ADMIN_PASSWORD='…' node scripts/rename-drive-files.mjs            # 바꿀 목록만 본다(드라이런)
 //   ADMIN_PASSWORD='…' node scripts/rename-drive-files.mjs --execute  # 실제로 바꾼다
@@ -70,12 +75,26 @@ const drive = (path, init = {}) => fetch(`https://www.googleapis.com/drive/v3${p
 const files = await json(await rest(
   'file?select=id,role,storage_path,derived_from,original_filename,created_at,item(identifier)&provider=eq.gdrive&order=created_at'));
 
-// 원본 먼저 — 썸네일 이름이 원본의 새 이름을 따르므로
+// 지금 Drive 이름 — 이미 규칙에 맞는 것은 그대로 쓰려고 먼저 읽는다
+const current = new Map();
+for (const f of files) {
+  const res = await drive(`/files/${f.storage_path}?fields=name`);
+  if (res.ok) current.set(f.id, (await res.json()).name);
+}
+const conforms = (identifier, name) =>
+  new RegExp(`^${identifier}_\\d{14}(-\\d+)?(\\.[a-z0-9]{1,5})?$`).test(name ?? '');
+
+// 원본 먼저 — 썸네일 이름이 원본의 이름을 따르므로
 const planned = new Map(); // file.id → 새 이름
 const used = new Set();
-for (const f of files.filter((x) => x.role === 'original')) {
+const originals = files.filter((x) => x.role === 'original');
+for (const f of originals) {
+  const name = current.get(f.id);
+  if (f.item?.identifier && conforms(f.item.identifier, name)) { planned.set(f.id, name); used.add(name); }
+}
+for (const f of originals) {
   const identifier = f.item?.identifier;
-  if (!identifier) continue;
+  if (!identifier || planned.has(f.id)) continue;
   const at = new Date(f.created_at);
   const ext = extOf(f.original_filename ?? '');
   let n = 1;
@@ -90,21 +109,34 @@ for (const f of files.filter((x) => x.role === 'thumb')) {
 }
 
 let changed = 0, same = 0, failed = 0;
+
+// 한 항목(파일이든 폴더든)의 Drive 이름을 맞춘다
+async function rename(driveId, next, label) {
+  const res = await drive(`/files/${driveId}?fields=name`);
+  if (!res.ok) { failed++; console.log(`  ✗ ${label}: Drive 에서 찾지 못함 (${res.status})`); return; }
+  const { name: current } = await res.json();
+  if (current === next) { same++; return; }
+  console.log(`  ${label} ${current}\n         → ${next}`);
+  if (EXECUTE) {
+    const up = await drive(`/files/${driveId}?fields=name`, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json; charset=UTF-8' }, body: JSON.stringify({ name: next }),
+    });
+    if (!up.ok) { failed++; console.log(`    ✗ 바꾸지 못함 (${up.status}) ${await up.text()}`); return; }
+  }
+  changed++;
+}
+
+// 폴더 — 바깥 폴더와 묶음 폴더
+const [root] = await json(await rest('app_setting?select=value&key=eq.google_root_folder_id'));
+if (root?.value) await rename(root.value, 'dodangdong-archive', '폴더  ');
+for (const b of await json(await rest('bundle?select=identifier,drive_folder_id&drive_folder_id=not.is.null&order=identifier'))) {
+  await rename(b.drive_folder_id, ascii(b.identifier), '폴더  ');
+}
+
 for (const f of files) {
   const next = planned.get(f.id);
   if (!next) { console.log(`  건너뜀(자료나 원본을 찾지 못함) ${f.id}`); continue; }
-  const res = await drive(`/files/${f.storage_path}?fields=name`);
-  if (!res.ok) { failed++; console.log(`  ✗ ${f.item?.identifier} ${f.role}: Drive 에서 찾지 못함 (${res.status})`); continue; }
-  const { name: current } = await res.json();
-  if (current === next) { same++; continue; }
-  console.log(`  ${f.role === 'thumb' ? '썸네일' : '원본  '} ${current}\n         → ${next}`);
-  if (EXECUTE) {
-    const up = await drive(`/files/${f.storage_path}?fields=name`, {
-      method: 'PATCH', headers: { 'Content-Type': 'application/json; charset=UTF-8' }, body: JSON.stringify({ name: next }),
-    });
-    if (!up.ok) { failed++; console.log(`    ✗ 바꾸지 못함 (${up.status}) ${await up.text()}`); continue; }
-  }
-  changed++;
+  await rename(f.storage_path, next, f.role === 'thumb' ? '썸네일' : '원본  ');
 }
 
 console.log(`\n${EXECUTE ? '바꿈' : '바꿀 것'} ${changed}개 · 이미 규칙대로 ${same}개 · 실패 ${failed}개`);
