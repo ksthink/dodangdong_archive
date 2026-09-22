@@ -37,7 +37,7 @@ export const TYPE_TOKEN: Record<string, string> = {
 /** 한 해가 최소 이만큼(px)은 되게 한다. 모자라면 가로로 밀어 본다. */
 export const MIN_YEAR_PX = 6;
 const MAX_BLOCKS = 8;
-const LABEL_PX_PER_CHAR = 11; // Galmuri11 한 글자
+const LABEL_PX_PER_CHAR = 12; // GalmuriMono11 한 글자(12px)
 
 export const yearHref = (year: number) => `/chronicle?decade=${Math.floor(year / 10) * 10}#y${year}`;
 

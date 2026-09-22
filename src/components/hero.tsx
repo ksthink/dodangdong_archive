@@ -28,7 +28,7 @@ export default function Hero({ slides }: { slides: HeroSlide[] }) {
             <p className="hero-kind">{s.kind}</p>
             <p className="meta-value">{s.kicker}</p>
             <h2 className="title hero-title">{s.title}</h2>
-            {s.summary && <p className="body-sm">{s.summary}</p>}
+            {s.summary && <p className="hero-summary">{s.summary}</p>}
             {s.meta.length > 0 && <p className="meta-value">{s.meta.join(' · ')}</p>}
             <Link className="button hero-cta" href={s.href}>{s.cta} →</Link>
           </div>

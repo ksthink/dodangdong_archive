@@ -15,6 +15,13 @@
   font-display: swap;
 }
 @font-face {
+  font-family: "Galmuri14";
+  src: url("/fonts/Galmuri14.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
   font-family: "GalmuriMono11";
   src: url("/fonts/GalmuriMono11.woff2") format("woff2");
   font-weight: 400;
@@ -61,16 +68,17 @@
   --shadow-pixel-sm: 2px 2px 0 0 #1b1b1b;
   --font-display: Galmuri11, system-ui, sans-serif;
   --font-sans: Galmuri11, system-ui, sans-serif;
+  --font-small: Galmuri14, Galmuri11, system-ui, sans-serif;
   --font-mono: GalmuriMono11, ui-monospace, monospace;
-  --text-display: 400 44px/55px var(--font-display);
-  --text-title: 400 33px/44px var(--font-display);
-  --text-heading: 700 22px/33px var(--font-display);
-  --text-pixel-label: 700 11px/16px var(--font-display);
-  --text-body: 400 22px/33px var(--font-sans);
-  --text-body-sm: 400 11px/22px var(--font-sans);
-  --text-meta-label: 400 11px/16px var(--font-mono);
+  --text-display: 400 48px/60px var(--font-display);
+  --text-title: 400 36px/48px var(--font-display);
+  --text-heading: 700 24px/36px var(--font-display);
+  --text-pixel-label: 700 12px/16px var(--font-display);
+  --text-body: 400 24px/36px var(--font-sans);
+  --text-body-sm: 400 15px/24px var(--font-small);
+  --text-meta-label: 400 12px/16px var(--font-mono);
   --text-meta-label-tracking: 0.06em;
-  --text-meta-value: 400 11px/22px var(--font-mono);
+  --text-meta-value: 400 12px/24px var(--font-mono);
 }
 
 @media (prefers-color-scheme: dark) {
