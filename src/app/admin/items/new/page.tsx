@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
 import { createItem } from '@/lib/actions';
 import ItemForm from '../item-form';
@@ -17,6 +18,10 @@ export default async function NewItemPage() {
       <h1 className="title">자료 등록</h1>
       <p className="measure" style={{ marginTop: 'var(--space-4)' }}>
         식별자는 저장할 때 DA- 로 자동으로 붙는다. 모르는 것은 비워 두고, 지어내지 않는다.
+      </p>
+      <p className="empty" style={{ marginTop: 'var(--space-6)' }}>
+        원본 파일은 아직 올릴 수 없다. 먼저 <Link href="/admin/drive">Google Drive 를 연결</Link>한다.
+        파일이 없는 자료(사건, 아직 디지털화하지 않은 실물)는 지금도 온전히 등록할 수 있다.
       </p>
 
       {bundles?.length ? (
