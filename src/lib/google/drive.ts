@@ -122,6 +122,14 @@ export async function rootFolder(): Promise<string> {
   return id;
 }
 
+/** 이 폴더에 같은 이름의 파일이 이미 있는가(이 앱이 만든 파일 가운데). */
+export async function nameTaken(folderId: string, name: string): Promise<boolean> {
+  const q = `name = '${name.replace(/\\/g, '\\\\').replace(/'/g, "\\'")}' and '${folderId}' in parents and trashed = false`;
+  const res = await drive(`/files?q=${encodeURIComponent(q)}&fields=files(id)&pageSize=1`);
+  const { files } = await res.json();
+  return Boolean(files?.length);
+}
+
 /** 이미 만들어 둔 바깥 폴더. 없으면 null — 보여 주려고 폴더를 새로 만들지는 않는다. */
 export async function savedRootFolder(): Promise<string | null> {
   return setting(ROOT_FOLDER_KEY);

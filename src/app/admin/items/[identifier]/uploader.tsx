@@ -53,7 +53,8 @@ export default function Uploader({ itemId }: { itemId: string }) {
     const res = await fetch('/api/drive/session', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ itemId, name, mimeType, size: body.size }),
+      // Drive 에 저장할 이름은 서버가 규칙대로 정한다(썸네일은 원본 이름을 따른다) — 역할과 원본을 함께 보낸다
+      body: JSON.stringify({ itemId, name, mimeType, size: body.size, ...extra }),
     });
     const json = await res.json();
     if (!res.ok) throw new Error(json.error ?? '업로드 세션을 열지 못했다.');
@@ -129,6 +130,11 @@ export default function Uploader({ itemId }: { itemId: string }) {
         <span className="body-sm">
           사진·문서 스캔·음성·영상을 고른다. 원본은 줄이지 않고 그대로 Drive 에 올리고,
           사진이면 목록용 썸네일을 함께 만든다.
+        </span>
+        <span className="help">
+          Drive 에는 <span className="meta-value">식별자_올린시각</span> 이름으로 저장된다
+          (예: <span className="meta-value">DA-0017_20260922190012.jpg</span>, 썸네일은 끝에 <span className="meta-value">_thumb</span>).
+          날짜는 올린 시각(한국 시간)이지 자료의 날짜가 아니다. 원래 파일 이름은 따로 남는다.
         </span>
       </label>
 

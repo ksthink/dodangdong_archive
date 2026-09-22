@@ -87,6 +87,10 @@ npm run tokens    # design/tokens.json → src/app/tokens.css (직접 고치지 
   - 자세한 규칙과 마이그레이션 목록은 [`supabase/README.md`](supabase/README.md) 에 있다.
 - **원본은 Drive 에 그대로 둔다.** 브라우저가 resumable 세션으로 Drive 에 직접 올리고, 앱은 파일 id 만 적는다.
   - `file.storage_path` 가 곧 Drive 파일 id 다.
+  - Drive 의 파일 이름은 `식별자_올린시각(한국 시간, 초까지).확장자` 다. 예: `DA-0017_20260922190012.jpg`.
+    - 같은 초에 겹치면 `-2`, `-3` 을 붙인다. 썸네일은 원본 이름 뒤에 `_thumb` 를 붙인다.
+    - 이름에는 한글·공백을 넣지 않는다(ASCII 만). 올린 원래 이름은 `file.original_filename` 에 남는다.
+    - 날짜는 올린 시각이지 자료의 날짜(dc:date)가 아니다. 규칙은 `src/lib/google/naming.ts` 에 있다.
   - 원본은 늘 `/api/media/[fileId]` 를 거쳐 나간다. 이 프록시가 공개 범위를 한 번 더 확인하고, Range 요청(음성·영상 탐색)을 넘긴다.
   - 공개 자료는 edge 에 60초 캐시하고, 비공개 자료는 어디에도 남기지 않는다.
 - **썸네일**: 사진을 올리면 브라우저가 긴 변 480px JPEG 사본을 함께 만든다(`role = 'thumb'`, `derived_from` = 원본).
@@ -127,6 +131,7 @@ npm run build && npm run start
 | --- | --- |
 | `npm run tokens` | 디자인 토큰 → `src/app/tokens.css` |
 | `node scripts/backfill-thumbs.mjs` | 빠진 썸네일을 채운다(`--dry-run` 으로 먼저 본다) |
+| `node scripts/rename-drive-files.mjs` | Drive 파일 이름을 지금 규칙으로 맞춘다. 드라이런이 기본이고, `--execute` 로 바꾼다 |
 | `scripts/seed/` | 가상 시험 자료를 넣고 지운다. 무엇이 들어 있는지는 [`scripts/seed/README.md`](scripts/seed/README.md) 에 있다 |
 
 - 관리자 권한이 필요한 스크립트는 비밀번호를 `ADMIN_PASSWORD` 환경변수로만 받는다. 어떤 파일에도 쓰지 않는다.

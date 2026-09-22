@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createClient, getAdmin } from '@/lib/supabase/server';
-import { bundleFolder, uploadSession } from '@/lib/google/drive';
+import { bundleFolder, fileMeta, nameTaken, uploadSession } from '@/lib/google/drive';
+import { extOf, originalName, thumbName } from '@/lib/google/naming';
 
 export const dynamic = 'force-dynamic';
 
@@ -8,7 +9,7 @@ export const dynamic = 'force-dynamic';
 export async function POST(request: NextRequest) {
   if (!(await getAdmin())) return NextResponse.json({ error: '관리자만 올릴 수 있다.' }, { status: 403 });
 
-  const { itemId, name, mimeType, size } = await request.json();
+  const { itemId, name, mimeType, size, role, derivedFrom } = await request.json();
   if (!itemId || !name || !size) {
     return NextResponse.json({ error: '자료·파일 이름·크기가 있어야 한다.' }, { status: 400 });
   }
@@ -20,10 +21,29 @@ export async function POST(request: NextRequest) {
     if (!item) return NextResponse.json({ error: '자료를 찾지 못했다.' }, { status: 404 });
 
     const folderId = await bundleFolder(item.bundle_id);
+
+    // Drive 이름은 규칙대로(src/lib/google/naming.ts). 올린 원래 이름은 register 가 표에 남긴다.
+    let driveName: string;
+    if (role === 'thumb') {
+      // 썸네일은 그 원본의 Drive 이름을 따른다 — 원본이 이 자료의 것인지 확인한다
+      const { data: source } = await supabase
+        .from('file').select('storage_path').eq('id', derivedFrom ?? '').eq('item_id', itemId).eq('role', 'original').maybeSingle();
+      if (!source) return NextResponse.json({ error: '썸네일의 원본이 이 자료의 원본이 아니다.' }, { status: 400 });
+      driveName = thumbName((await fileMeta(source.storage_path)).name);
+    } else {
+      const at = new Date();
+      const ext = extOf(String(name));
+      let n = 1;
+      // 한 번에 여러 장을 고르면 같은 초에 올라갈 수 있다 — 겹치면 -2, -3 …
+      while (await nameTaken(folderId, originalName(item.identifier, at, ext, n))) {
+        if (++n > 50) throw new Error('같은 이름이 너무 많다. 잠시 뒤 다시 올린다.');
+      }
+      driveName = originalName(item.identifier, at, ext, n);
+    }
+
     const url = await uploadSession({
       folderId,
-      // 파일 이름 앞에 식별자를 붙여 Drive 에서도 어느 자료의 원본인지 보이게 한다.
-      name: `${item.identifier} ${name}`,
+      name: driveName,
       mimeType: mimeType || 'application/octet-stream',
       size: Number(size),
       origin: request.nextUrl.origin,

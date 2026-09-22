@@ -68,8 +68,9 @@ for (const f of todo) {
       .toBuffer({ resolveWithObject: true });
 
     // 원본과 같은 폴더(그 자료의 묶음 폴더)에 올린다
-    const { parents } = await json(await drive(`/drive/v3/files/${f.storage_path}?fields=parents`));
-    const name = `썸네일 ${(f.original_filename ?? 'image').replace(/\.[^.]+$/, '')}.jpg`;
+    // 이름은 원본의 Drive 이름 + _thumb (src/lib/google/naming.ts 의 thumbName 과 같은 규칙)
+    const { parents, name: sourceName } = await json(await drive(`/drive/v3/files/${f.storage_path}?fields=parents,name`));
+    const name = `${sourceName.replace(/\.[^.]+$/, '')}_thumb.jpg`;
     const boundary = 'dodang-thumb';
     const body = Buffer.concat([
       Buffer.from(`--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify({ name, parents })}\r\n--${boundary}\r\nContent-Type: image/jpeg\r\n\r\n`),
