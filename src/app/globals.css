@@ -434,3 +434,20 @@ button.transcript-time:hover { border-color: var(--ink); }
 .transcript p { font: var(--text-body); }
 .transcript-speaker { font-weight: 700; margin-right: var(--space-2); }
 @media (max-width: 559px) { .transcript li { grid-template-columns: 1fr; gap: var(--space-1); } }
+
+/* 인물 — 보기 전환(목록 | 가계도). 고른 쪽은 ink 채움 */
+.view-switch { display: inline-flex; margin-top: var(--space-6); border: var(--stroke) solid var(--ink); }
+.view-switch a { font: var(--text-body-sm); padding: var(--space-2) var(--space-4); }
+.view-switch a + a { border-left: var(--stroke) solid var(--ink); }
+.view-switch a.is-on { background: var(--ink); color: var(--on-ink); text-decoration: none; }
+
+/* 가계도 — 칸은 절대 위치, 선은 밑에 깐 SVG(2px 직각) */
+.tree-scroll { overflow-x: auto; margin-top: var(--space-4); padding: var(--space-1) var(--space-1) var(--space-2); }
+.tree { position: relative; margin-inline: auto; }
+.tree-lines { position: absolute; inset: 0; fill: var(--ink); }
+.tree-card { position: absolute; display: grid; align-content: center; gap: 0; padding: var(--space-2) var(--space-3);
+  background: var(--paper); border: var(--stroke) solid var(--ink); overflow: hidden; }
+.tree-card:hover { text-decoration: none; box-shadow: var(--shadow-pixel); }
+.tree-card.is-root { border-width: var(--stroke-heavy); box-shadow: var(--shadow-pixel); }
+.tree-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
