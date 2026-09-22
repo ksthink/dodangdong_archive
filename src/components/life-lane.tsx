@@ -82,7 +82,7 @@ export default function LifeLane({
           p.from === null ? null : (
             <span key={`${p.label}-${i}`} className={i % 2 ? 'lane-period is-b' : 'lane-period'}
               style={{ left: x(p.from), width: w(p.from, (p.to ?? end - 1) + 1) }}
-              title={`${p.label} ${p.from}–${p.to ?? ''}`}>
+              data-tip={`${p.label} ${p.from}–${p.to ?? ''}`}>
               {fits(p) && <span className="lane-period-label">{p.label}</span>}
             </span>
           ),
@@ -98,7 +98,7 @@ export default function LifeLane({
           return (
             <Link key={year} href={yearHref(year)} className="lane-year"
               style={{ left: x(year), width: w(year, year + 1) }}
-              title={label} aria-label={`${lane.name} ${label}`}>
+              data-tip={label} aria-label={`${lane.name} ${label}`}>
               {events.length > 0 && (
                 <span className={events.some((e) => e.verified) ? 'lane-event is-verified' : 'lane-event'} aria-hidden />
               )}

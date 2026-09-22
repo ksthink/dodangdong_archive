@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import './tokens.css';
 import './globals.css';
+import TipLayer from '@/components/tip-layer';
 
 export const metadata: Metadata = {
   title: '도당동 아카이브',
@@ -13,7 +14,10 @@ export const viewport: Viewport = { colorScheme: 'only light' };
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="ko">
-      <body>{children}</body>
+      <body>
+        {children}
+        <TipLayer />
+      </body>
     </html>
   );
 }

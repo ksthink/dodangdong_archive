@@ -466,3 +466,30 @@ button.transcript-time:hover { border-color: var(--ink); }
 .stream-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-3); margin-top: var(--space-2); }
 .stream-uploader { display: inline-flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
 .stream-uploader .button { padding: var(--space-1) var(--space-3); }
+
+/* 픽셀 툴팁(TipLayer) — 브라우저 기본 툴팁 대신. 먹색 면, 갈무리, 흐림 없는 그림자 */
+.tip { position: fixed; z-index: 50; pointer-events: none; max-width: 320px;
+  transform: translateY(calc(-100% - 8px));
+  background: var(--ink); color: var(--on-ink); font: var(--text-body-sm);
+  padding: var(--space-1) var(--space-2); box-shadow: var(--shadow-pixel); white-space: nowrap; }
+.tip.is-below { transform: translateY(8px); }
+
+/* 목록 상자 — 펼친 목록의 항목에도 갈무리를 입힌다(Windows·Linux 의 Chrome·Firefox 는 이것으로 된다) */
+select.field, select.field option { font: var(--text-body-sm); }
+/* 목록을 직접 꾸밀 수 있는 브라우저(Chrome·Edge 135+)에서는 펼친 목록까지 픽셀 창으로 그린다.
+   나머지는 브라우저 기본 목록 그대로다 — macOS·iOS·Android 기본 목록은 운영체제가 그린다. */
+@supports (appearance: base-select) {
+  select.field, select.field::picker(select) { appearance: base-select; }
+  select.field { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); cursor: pointer; }
+  select.field::picker-icon { content: '▼'; font: var(--text-meta-value); color: var(--ink); transition: none; }
+  select.field:open::picker-icon { content: '▲'; }
+  select.field::picker(select) {
+    border: var(--stroke) solid var(--ink); border-radius: 0; background: var(--paper); color: var(--ink);
+    box-shadow: var(--shadow-pixel); padding: 0; margin-block: var(--space-1);
+  }
+  select.field option { font: var(--text-body-sm); padding: var(--space-2) var(--space-4); gap: var(--space-2); }
+  select.field option::checkmark { content: '■'; font: var(--text-meta-value); }
+  select.field option:hover, select.field option:focus-visible { background: var(--paper-sunken); outline: none; }
+  select.field option:checked { background: var(--ink); color: var(--on-ink); }
+  select.field option:disabled { color: var(--ink-muted); }
+}
