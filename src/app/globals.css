@@ -255,19 +255,38 @@ a:hover { text-decoration: underline; text-decoration-thickness: var(--stroke); 
 .inline-form { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; margin-top: var(--space-4); max-width: var(--measure); }
 .inline-form .field { width: auto; flex: 1 1 140px; }
 
-/* 생애 띠 */
-.lane { display: grid; grid-template-columns: 1fr; gap: var(--space-2); margin-top: var(--space-3); }
-@media (min-width: 760px) { .lane { grid-template-columns: 180px 1fr; align-items: center; } }
-.lane-name { font: var(--text-body-sm); font-weight: 700; }
-.lane-track { position: relative; height: 44px; background: var(--paper-sunken); border: var(--stroke) solid var(--rule); }
-.lane-life { position: absolute; top: 50%; height: var(--stroke); background: var(--ink); }
-.lane-period { position: absolute; top: 8px; height: 16px; background: var(--rule-strong); overflow: hidden; }
-.lane-period.is-alt { background: repeating-conic-gradient(var(--rule-strong) 0% 25%, var(--paper-sunken) 0% 50%) 0 0 / 4px 4px; }
-.lane-period-label { font: var(--text-meta-label); color: var(--on-ink); padding: 0 var(--space-1); white-space: nowrap; }
-.lane-period.is-alt .lane-period-label { color: var(--ink); background: var(--paper); }
-.lane-dot { position: absolute; bottom: 6px; width: 4px; height: 4px; margin-left: -2px; background: var(--ink); }
+/* 생애 띠 — 연표 전용 저채도 팔레트(--tl-*)를 쓴다. 나머지 UI 는 여전히 무채색이다. */
+.lane-scroll { overflow-x: auto; margin-top: var(--space-2); }
+.lane { display: grid; grid-template-columns: 180px 1fr; gap: var(--space-2); align-items: center; margin-top: var(--space-2); }
+.lane-name { font: var(--text-body-sm); font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  position: sticky; left: 0; z-index: 2; background: var(--paper); align-self: stretch; display: flex; align-items: center; }
+.lane-track { position: relative; height: 76px; background: var(--paper-sunken); border: var(--stroke) solid var(--rule); }
+.lane-cursor { position: absolute; top: 0; bottom: 0; background: var(--tl-cursor); border-inline: var(--stroke) solid var(--ink); }
+.lane-period { position: absolute; top: 2px; height: 22px; background: var(--tl-period-a); overflow: hidden; }
+.lane-period.is-b { background: var(--tl-period-b); }
+.lane-period-label { display: block; font: var(--text-meta-label); line-height: 22px; color: var(--ink); padding: 0 var(--space-1); white-space: nowrap; }
+.lane-life { position: absolute; bottom: 4px; height: var(--stroke); background: var(--ink); }
+/* 해마다 막대 — 누를 수 있는 칸. 좁아도 6px 는 된다. */
+.lane-year { position: absolute; top: 26px; bottom: 8px; min-width: 6px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 2px; }
+.lane-year:hover { background: var(--rule); text-decoration: none; }
+.lane-year:focus-visible { outline-offset: 0; }
+.lane-stack { display: flex; flex-direction: column-reverse; gap: 2px; width: 100%; max-width: 8px; }
+.lane-stack i { display: block; height: 4px; }
+.lane-stack i.is-more { background: var(--ink); height: 2px; }
+.lane-event { width: 8px; height: 8px; background: var(--ink); flex: none; }
+.lane-event.is-verified { background: var(--mark); }
 .lane-axis { position: relative; height: 22px; }
 .lane-axis span { position: absolute; transform: translateX(-50%); }
+.lane-periods { grid-column: 2; }
+.swatch { display: inline-block; width: 11px; height: 11px; background: var(--tl-period-a); border: var(--stroke) solid var(--rule-strong); vertical-align: -1px; }
+.swatch.is-b { background: var(--tl-period-b); }
+/* 범례 — 색만으로 뜻을 전하지 않는다 */
+.lane-legend { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-4); align-items: center; margin-top: var(--space-3); }
+.lane-legend i { display: inline-block; width: 11px; height: 11px; vertical-align: -1px; }
+.lane-legend i.is-event { background: var(--ink); }
+.lane-legend i.is-event-verified { background: var(--mark); }
+.type-chip { display: inline-block; width: 11px; height: 11px; margin-right: var(--space-1); vertical-align: -1px; }
+@media (max-width: 759px) { .lane { grid-template-columns: 96px 1fr; } }
 
 /* 인물 */
 .person-grid { display: grid; gap: var(--space-6); grid-template-columns: 1fr; }
@@ -353,3 +372,5 @@ ul.help { margin-top: var(--space-2); display: grid; gap: var(--space-1); }
 .filelist li.has-thumb { grid-template-columns: 96px 1fr auto; }
 .file-thumb { width: 96px; aspect-ratio: 4 / 3; display: grid; place-items: center; background: var(--paper-sunken); border: var(--stroke) solid var(--rule); overflow: hidden; }
 .file-thumb img { width: 100%; height: 100%; object-fit: cover; }
+/* 축 줄의 이름 칸은 비어 있다 — 바탕을 깔면 첫 눈금(1930)을 덮는다 */
+.lane-axis-row .lane-name { background: transparent; }

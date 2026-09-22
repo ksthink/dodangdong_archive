@@ -6,7 +6,7 @@ import { TYPE_LABEL } from '@/lib/labels';
 import { edtfYear } from '@/lib/edtf';
 import SiteHeader from '@/components/site-header';
 import SiteFooter from '@/components/site-footer';
-import LifeLane, { LaneAxis } from '@/components/life-lane';
+import LifeLane, { LaneAxis, LaneLegend, LaneScroller, type LaneRecord } from '@/components/life-lane';
 import { thumbsFor } from '@/lib/thumbs';
 import Thumb from '@/components/thumb';
 
@@ -76,12 +76,18 @@ export default async function PersonPage({ params }: Params) {
     ['부모', kin(parents)], ['배우자', kin(spouses)], ['자녀', kin(children)],
   ];
 
-  const records = [...(made ?? []), ...appearsItems]
-    .map((it) => edtfYear(it.created_edtf)).filter((y): y is number => y !== null);
+  // 만든 자료와 나오는 자료. 둘 다인 자료는 한 번만 센다.
+  const recordMap = new Map<string, LaneRecord>();
+  for (const it of [...((made ?? []) as ItemRow[]), ...appearsItems]) {
+    const year = edtfYear(it.created_edtf);
+    if (year !== null) recordMap.set(it.identifier, { year, type: it.type, verified: it.date_verified });
+  }
+  const records = [...recordMap.values()];
+  const years = records.map((r) => r.year);
   const born = person.born_year as number | null;
   const died = person.died_year as number | null;
   const nowYear = new Date().getFullYear();
-  const from = Math.floor(((born ?? Math.min(...records, nowYear)) - 2) / 10) * 10;
+  const from = Math.floor(((born ?? Math.min(...years, nowYear)) - 2) / 10) * 10;
   const to = died ?? nowYear;
 
   return (
@@ -115,12 +121,16 @@ export default async function PersonPage({ params }: Params) {
 
         <section className="section">
           <h2 className="section-title"><span>생애</span><span className="label-code">dcterms:temporal</span></h2>
-          <LaneAxis from={from} to={to} />
-          <LifeLane from={from} to={to} lane={{
-            name: person.short_name ?? person.display_name, born, died,
-            periods: (periods ?? []).map((p) => ({ label: p.label, from: p.from_year, to: p.to_year })),
-            records,
-          }} />
+          <LaneLegend />
+          <LaneScroller from={from} to={to}>
+            <LaneAxis from={from} to={to} />
+            <LifeLane from={from} to={to} showPeriodList lane={{
+              identifier: person.identifier,
+              name: person.short_name ?? person.display_name, born, died,
+              periods: (periods ?? []).map((p) => ({ label: p.label, from: p.from_year, to: p.to_year })),
+              records,
+            }} />
+          </LaneScroller>
         </section>
 
         <section className="section">

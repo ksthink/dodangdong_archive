@@ -4,7 +4,7 @@ import { TYPE_LABEL } from '@/lib/labels';
 import { edtfYear, parseEdtf } from '@/lib/edtf';
 import SiteHeader from '@/components/site-header';
 import SiteFooter from '@/components/site-footer';
-import LifeLane, { LaneAxis } from '@/components/life-lane';
+import LifeLane, { LaneAxis, LaneLegend, LaneScroller, TYPE_TOKEN, type LaneRecord } from '@/components/life-lane';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: '연표 · 도당동 아카이브' };
@@ -27,12 +27,12 @@ export default async function ChroniclePage({ searchParams }: { searchParams: Pr
 
   // 비공개 자료는 RLS 가 행을 주지 않는다 — 연표에서도 조용히 빠진다.
   const [{ data: items }, { data: people }, { data: periods }, { data: world }, { data: links }] = await Promise.all([
-    supabase.from('item').select('identifier, title, type, created_edtf, created_start, date_verified').not('created_edtf', 'is', null),
+    supabase.from('item').select('identifier, title, type, created_edtf, created_start, date_verified, creator_person_id').not('created_edtf', 'is', null),
     supabase.from('person').select('id, identifier, short_name, display_name, birth_edtf, born_year, died_year')
       .not('born_year', 'is', null).order('born_year'),
     supabase.from('life_period').select('person_id, label, from_year, to_year, sort_order').order('sort_order'),
     supabase.from('world_event').select('year, label').order('year').order('sort_order'),
-    supabase.from('item_person').select('person_id, item(created_edtf)'),
+    supabase.from('item_person').select('person_id, item(identifier, type, created_edtf, date_verified)'),
   ]);
 
   // 해마다 묶는다. 197X 는 1975, 기간은 시작 해에 놓는다.
@@ -65,12 +65,21 @@ export default async function ChroniclePage({ searchParams }: { searchParams: Pr
 
   const years = current === null ? [] : [...byYear.keys()].filter((y) => y >= current && y < current + 10).sort((a, b) => a - b);
 
-  // 생애 띠 — 사람마다 그 사람이 나오는 자료의 해를 점으로
-  const recordsOf = new Map<string, number[]>();
+  // 생애 띠 — 사람마다 그 사람이 나오거나 만든 자료. 한 자료는 한 번만 센다.
+  const recordsOf = new Map<string, Map<string, LaneRecord>>();
+  const add = (personId: string, it: { identifier: string; type: string; created_edtf: string | null; date_verified: boolean }) => {
+    const y = edtfYear(it.created_edtf);
+    if (y === null) return;
+    const m = recordsOf.get(personId) ?? new Map<string, LaneRecord>();
+    m.set(it.identifier, { year: y, type: it.type, verified: it.date_verified });
+    recordsOf.set(personId, m);
+  };
   for (const l of links ?? []) {
-    const it = (Array.isArray(l.item) ? l.item[0] : l.item) as { created_edtf: string | null } | null;
-    const y = edtfYear(it?.created_edtf);
-    if (y !== null) recordsOf.set(l.person_id, [...(recordsOf.get(l.person_id) ?? []), y]);
+    const it = (Array.isArray(l.item) ? l.item[0] : l.item) as { identifier: string; type: string; created_edtf: string | null; date_verified: boolean } | null;
+    if (it) add(l.person_id, it);
+  }
+  for (const it of (items ?? []) as (Row & { creator_person_id: string | null })[]) {
+    if (it.creator_person_id) add(it.creator_person_id, it);
   }
   const nowYear = new Date().getFullYear();
   const laneFrom = Math.floor(Math.min(...(people ?? []).map((p) => p.born_year as number), ...byYear.keys(), nowYear) / 10) * 10;
@@ -109,15 +118,21 @@ export default async function ChroniclePage({ searchParams }: { searchParams: Pr
             {people?.length ? (
               <section className="section">
                 <h2 className="section-title">가족 생애</h2>
-                <LaneAxis from={laneFrom} to={nowYear} />
-                {people.map((p) => (
-                  <LifeLane key={p.id} from={laneFrom} to={nowYear} lane={{
-                    name: p.short_name ?? p.display_name,
-                    born: p.born_year as number, died: p.died_year as number | null,
-                    periods: (periods ?? []).filter((x) => x.person_id === p.id).map((x) => ({ label: x.label, from: x.from_year, to: x.to_year })),
-                    records: recordsOf.get(p.id) ?? [],
-                  }} />
-                ))}
+                <LaneLegend />
+                <LaneScroller from={laneFrom} to={nowYear}>
+                  <LaneAxis from={laneFrom} to={nowYear} />
+                  {people.map((p) => (
+                    <LifeLane key={p.id} from={laneFrom} to={nowYear}
+                      cursor={current === null ? null : { from: current, to: current + 9 }}
+                      lane={{
+                        identifier: p.identifier,
+                        name: p.short_name ?? p.display_name,
+                        born: p.born_year as number, died: p.died_year as number | null,
+                        periods: (periods ?? []).filter((x) => x.person_id === p.id).map((x) => ({ label: x.label, from: x.from_year, to: x.to_year })),
+                        records: [...(recordsOf.get(p.id)?.values() ?? [])],
+                      }} />
+                  ))}
+                </LaneScroller>
               </section>
             ) : null}
 
@@ -133,7 +148,7 @@ export default async function ChroniclePage({ searchParams }: { searchParams: Pr
                   .filter((p) => (p.born_year as number) <= y && (p.died_year === null || (p.died_year as number) >= y))
                   .map((p) => ({ id: p.identifier, name: p.short_name ?? p.display_name, age: y - (p.born_year as number), approx: uncertainBirth(p.birth_edtf) }));
                 return (
-                  <article key={y} className="year">
+                  <article key={y} id={`y${y}`} className="year">
                     <h3 className="title">{y}</h3>
                     {ages.length > 0 && (
                       <p className="meta-value ages">
@@ -159,6 +174,7 @@ export default async function ChroniclePage({ searchParams }: { searchParams: Pr
                         {records.map((r) => (
                           <p key={r.identifier} className="record">
                             <span className="meta-value">{r.created_edtf}</span>{' '}
+                            <span className="type-chip" style={{ background: TYPE_TOKEN[r.type] }} aria-hidden />
                             <span className="meta-label">{TYPE_LABEL[r.type]}</span>{' '}
                             <Link href={`/item/${r.identifier}`}>{r.title}</Link>
                             {r.date_verified && <span className="verified">확인됨</span>}
