@@ -44,12 +44,15 @@ export default async function ItemPage({ params }: Params) {
   const subjectLabels = (subjects ?? []).map((s) => one<{ label: string }>(s.subject)?.label).filter(Boolean);
   const depicted = (people ?? [])
     .filter((p) => p.role === 'depicted')
-    .map((p) => one<{ display_name: string }>(p.person)?.display_name)
-    .filter(Boolean);
+    .map((p) => one<{ display_name: string; identifier: string }>(p.person))
+    .filter(Boolean) as { display_name: string; identifier: string }[];
+  const personLink = (p: { display_name: string; identifier: string }) => (
+    <Link key={p.identifier} href={`/people/${p.identifier}`}>{p.display_name}</Link>
+  );
 
   // 상세정보 표 — README 가 정한 순서. 값이 없는 행은 숨긴다.
   const rows: [string, string, React.ReactNode][] = [
-    ['생산자', 'dc:creator', creatorPerson?.display_name ?? item.creator],
+    ['생산자', 'dc:creator', creatorPerson ? personLink(creatorPerson) : item.creator],
     ['생산일자', 'dc:date', item.created_edtf && (
       <>{item.created_edtf}{item.date_verified && <span className="verified">확인됨</span>}</>
     )],
@@ -58,7 +61,9 @@ export default async function ItemPage({ params }: Params) {
     ['출처분류', 'dc:source', [bundle?.source, item.source].filter(Boolean).join(' > ') || null],
     ['주제분류', 'dc:subject', subjectLabels.length ? subjectLabels.join(' · ') : null],
     ['장소', 'dcterms:spatial', place && [place.family_name, place.admin_name].filter(Boolean).join(', ')],
-    ['등장인물', 'dc:subject', depicted.length ? depicted.join(' · ') : null],
+    ['등장인물', 'dc:subject', depicted.length
+      ? depicted.map((p, i) => <span key={p.identifier}>{i > 0 && ' · '}{personLink(p)}</span>)
+      : null],
     ['참여자', 'dc:contributor', item.contributor],
     ['발행처', 'dc:publisher', item.publisher],
     ['형식', 'dc:format', [item.medium, item.extent].filter(Boolean).join(' · ') || null],

@@ -254,3 +254,32 @@ a:hover { text-decoration: underline; text-decoration-thickness: var(--stroke); 
 /* 한 줄 양식 — 시기·관계 더하기 */
 .inline-form { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; margin-top: var(--space-4); max-width: var(--measure); }
 .inline-form .field { width: auto; flex: 1 1 140px; }
+
+/* 생애 띠 */
+.lane { display: grid; grid-template-columns: 1fr; gap: var(--space-2); margin-top: var(--space-3); }
+@media (min-width: 760px) { .lane { grid-template-columns: 180px 1fr; align-items: center; } }
+.lane-name { font: var(--text-body-sm); font-weight: 700; }
+.lane-track { position: relative; height: 44px; background: var(--paper-sunken); border: var(--stroke) solid var(--rule); }
+.lane-life { position: absolute; top: 50%; height: var(--stroke); background: var(--ink); }
+.lane-period { position: absolute; top: 8px; height: 16px; background: var(--rule-strong); overflow: hidden; }
+.lane-period.is-alt { background: repeating-conic-gradient(var(--rule-strong) 0% 25%, var(--paper-sunken) 0% 50%) 0 0 / 4px 4px; }
+.lane-period-label { font: var(--text-meta-label); color: var(--on-ink); padding: 0 var(--space-1); white-space: nowrap; }
+.lane-period.is-alt .lane-period-label { color: var(--ink); background: var(--paper); }
+.lane-dot { position: absolute; bottom: 6px; width: 4px; height: 4px; margin-left: -2px; background: var(--ink); }
+.lane-axis { position: relative; height: 22px; }
+.lane-axis span { position: absolute; transform: translateX(-50%); }
+
+/* 인물 */
+.person-grid { display: grid; gap: var(--space-6); grid-template-columns: 1fr; }
+@media (min-width: 620px)  { .person-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (min-width: 1000px) { .person-grid { grid-template-columns: repeat(3, 1fr); } }
+.person-card { display: grid; grid-template-columns: 96px 1fr; gap: var(--space-4); align-items: start; }
+.face { width: 96px; height: 96px; border: var(--stroke) solid var(--ink); display: grid; place-items: center;
+  background: repeating-conic-gradient(var(--rule) 0% 25%, var(--paper-sunken) 0% 50%) 0 0 / 4px 4px; }
+.face span { font: var(--text-title); background: var(--paper); padding: 0 var(--space-1); }
+.face.is-l { width: 144px; height: 144px; box-shadow: var(--shadow-pixel); }
+.person-head { display: grid; gap: var(--space-6); grid-template-columns: 1fr; }
+@media (min-width: 620px) { .person-head { grid-template-columns: 144px 1fr; } }
+.facts { display: grid; grid-template-columns: max-content 1fr; gap: var(--space-1) var(--space-4); margin-top: var(--space-4); font: var(--text-body-sm); }
+.facts dt { color: var(--ink-muted); }
+.facts dd { margin: 0; }
