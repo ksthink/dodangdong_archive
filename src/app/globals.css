@@ -158,9 +158,7 @@ a:hover { text-decoration: underline; text-decoration-thickness: var(--stroke); 
   color: var(--ink-muted);
 }
 
-/* 꼬리말 로고 — 작게, 가운데. 원본 504×288 을 32px 높이로 줄인다 */
 .footer { align-items: center; }
-.footer-logo { display: block; width: auto; height: 32px; }
 
 /* 로그인 — 픽셀 창 하나가 화면 가운데 */
 .page.center { display: grid; place-items: center; min-height: 100vh; }
