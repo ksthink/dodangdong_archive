@@ -31,12 +31,12 @@ export default async function Home() {
       .select('id, identifier, title, type, created_edtf, date_verified')
       .order('submitted_at', { ascending: false })
       .limit(8),
-    // 이야기는 히어로가 이미 걸고 있다 — 여기서는 인물을 보인다. /people 과 같은 순서(나이 든 사람부터)
+    // 이야기는 히어로가 이미 걸고 있다 — 여기서는 인물을 보인다. 최근에 손댄 여덟 명.
     supabase
       .from('person')
       .select('id, identifier, display_name, short_name, real_name, birth_edtf, death_edtf, relation_to_root', { count: 'exact' })
-      .order('born_year', { ascending: true, nullsFirst: false })
-      .limit(6),
+      .order('modified_at', { ascending: false })
+      .limit(8),
     supabase.from('item').select('type'),
   ]);
 
@@ -72,8 +72,11 @@ export default async function Home() {
               <li key={code} className="card">
                 <Link href={`/search?type=${code}`}>
                   <span className="meta-label">{code}</span>
-                  <p className="heading" style={{ marginTop: 'var(--space-2)' }}>{label}</p>
-                  <p className="meta-value">{byType.get(code) ?? 0}건</p>
+                  {/* 건수는 이름 왼쪽에 같은 크기로. 굵기와 색을 낮춰 이름이 먼저 읽히게 한다 */}
+                  <p className="type-line">
+                    <span className="type-count">{byType.get(code) ?? 0}</span>
+                    <span className="heading">{label}</span>
+                  </p>
                 </Link>
               </li>
             ))}
@@ -82,7 +85,7 @@ export default async function Home() {
 
         <section className="section">
           <h2 className="section-title">
-            인물 <Link className="meta-value" href="/people">전체 {peopleCount ?? 0}명 · 가계도 보기</Link>
+            인물 <Link className="meta-value" href="/people">최근 손댄 순 · 전체 {peopleCount ?? 0}명</Link>
           </h2>
           {people?.length ? (
             <ul className="person-grid">

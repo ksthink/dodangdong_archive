@@ -34,6 +34,8 @@ function personFields(form: FormData) {
     died_year: edtfYear(death),
     relation_to_root: text(form, 'relation_to_root'),
     note: text(form, 'note'),
+    // 첫 화면이 "최근 손댄 인물" 을 이 값으로 고른다. 고칠 때마다 찍는다.
+    modified_at: new Date().toISOString(),
   };
 }
 
