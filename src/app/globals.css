@@ -202,16 +202,17 @@ a:hover { text-decoration: underline; text-decoration-thickness: var(--stroke); 
 /* Google Drive 칸 안에 들어간다 — 칸이 반 폭이라 열을 글자에 맞춰 좁힌다 */
 .storage-formats { display: grid; gap: var(--space-2); margin-top: var(--space-4); border-top: var(--stroke) solid var(--rule); padding-top: var(--space-3); }
 .storage-formats li {
-  display: grid; align-items: center; gap: var(--space-2);
-  grid-template-columns: auto auto auto 1fr auto;
+  display: flex; align-items: center; gap: var(--space-2);
   border-bottom: var(--stroke) solid var(--rule); padding-bottom: var(--space-2);
 }
+.storage-formats .meter { flex: 1 1 auto; min-width: 40px; }
+.storage-formats .storage-bytes { flex: 0 0 auto; }
 .storage-format { font: var(--text-meta-value); color: var(--ink); }
 .storage-bytes { text-align: right; }
 .storage-formats .meter { margin: 0; }
 @media (max-width: 559px) {
-  .storage-formats li { grid-template-columns: auto auto 1fr; }
-  .storage-formats .meter { grid-column: 1 / -1; }
+  .storage-formats li { flex-wrap: wrap; }
+  .storage-formats .meter { flex-basis: 100%; }
 }
 
 /* 등록·수정 양식 — 2열, 설명과 주제분류만 두 칸 폭 */

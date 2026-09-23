@@ -21,6 +21,16 @@ function formatName(mime: string): string {
   return sub.toUpperCase();
 }
 
+/** 표 이름은 영문이다 — 화면에는 우리말로 적는다. 없는 이름은 그대로 둔다. */
+const TABLE_LABEL: Record<string, string> = {
+  item: '자료', file: '파일', person: '인물', bundle: '묶음', collection: '이야기',
+  curation_block: '이야기 블록', curation_ref: '이야기가 건 자료', transcript: '녹취록',
+  item_person: '자료–인물', item_subject: '자료–주제', item_collection: '자료–묶음',
+  item_life_period: '자료–생애', person_relation: '인물 관계', life_period: '생애 구간',
+  place: '장소', subject: '주제분류', world_event: '세상일', hero_slot: '첫 화면 자리',
+  event_log: '기록', acquisition: '수집', admin_user: '관리자', app_setting: '설정',
+};
+
 /** 1.4GB, 12.4MB 처럼 한 자리까지. 1000 으로 나눈다(디스크가 파는 단위와 같게). */
 function readableBytes(n: number): string {
   if (n >= 1e9) return `${Math.round(n / 1e8) / 10}GB`;
@@ -51,8 +61,9 @@ export default async function AdminPage() {
   ]);
 
   // 저장소 — DB 크기는 함수로 묻고(0016), Drive 는 우리가 올린 파일의 합이다(파일이 적어 그대로 더한다).
-  const [{ data: dbSize, error: dbError }, { data: files }] = await Promise.all([
+  const [{ data: dbSize, error: dbError }, { data: tables }, { data: files }] = await Promise.all([
     supabase.rpc('db_size'),
+    supabase.rpc('db_tables'),
     supabase.from('file').select('mime, bytes'),
   ]);
   // 못 읽었으면 0 으로 눙치지 않는다 — 0% 는 "비어 있다" 로 읽혀 거짓말이 된다.
@@ -67,6 +78,14 @@ export default async function AdminPage() {
     byFormat.set(mime, { count: seen.count + 1, bytes: seen.bytes + Number(f.bytes ?? 0) });
   }
   const formats = [...byFormat.entries()].sort((a, b) => b[1].bytes - a[1].bytes);
+
+  // 표는 큰 것 여섯만 본다. 스물두 개를 다 늘어놓으면 벽이 된다.
+  type Table = { name: string; rows: number; bytes: number };
+  const biggest = ((tables ?? []) as Table[])
+    .filter((t) => t.rows > 0)
+    .sort((a, b) => b.bytes - a.bytes)
+    .slice(0, 6);
+  const widestTable = biggest[0]?.bytes ?? 0;
   // 막대는 가장 큰 형식을 가득 찬 것으로 잡는다. 전체 용량에 견주면 죄다 한 점이라 보이지 않는다.
   const widest = formats[0]?.[1].bytes ?? 0;
 
@@ -108,6 +127,22 @@ export default async function AdminPage() {
                   : `${readableBytes(dbBytes)} / ${readableBytes(DB_LIMIT)} · ${readableBytes(DB_LIMIT - dbBytes)} 남음`}
               </p>
               <p className="meta-value">기술(더블린코어)이 사는 곳</p>
+
+              {/* 무엇이 자리를 차지하는지 — 큰 표부터. 딸린 인덱스까지 더한 크기다 */}
+              {biggest.length > 0 && (
+                <ul className="storage-formats">
+                  {biggest.map((t) => (
+                    <li key={t.name}>
+                      <span className="meta-label">{TABLE_LABEL[t.name] ?? t.name}</span>
+                      <span className="meta-value">{t.rows}행</span>
+                      <div className="meter" aria-hidden>
+                        <div className="meter-fill" style={{ width: widestTable ? `${Math.max((t.bytes / widestTable) * 100, 1.5)}%` : 0 }} />
+                      </div>
+                      <span className="meta-value storage-bytes">{readableBytes(t.bytes)}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </li>
 
             <li className="card">
