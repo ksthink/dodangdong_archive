@@ -41,6 +41,9 @@ export default function TranscriptPlayer({
   const [now, setNow] = useState(0);
   const boxRef = useRef<HTMLDivElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
+  /** 사람이 마지막으로 상자를 굴린 때 · 우리가 마지막으로 옮긴 때 */
+  const heldAt = useRef(0);
+  const autoAt = useRef(0);
 
   // 지금 대목 — 시작 시각이 지금 이전인 마지막 대목. 아직 아무것도 안 틀었으면 첫 대목을 짚는다.
   let active = groups.findIndex((g) => g.start !== null);
@@ -58,17 +61,35 @@ export default function TranscriptPlayer({
     };
   }, []);
 
-  // 지금 대목이 바뀌면 그 줄이 가운데 오게 흐른다.
-  useEffect(() => {
+  /** 지금 대목을 상자 가운데로 옮긴다. */
+  const center = () => {
     const box = boxRef.current;
     const line = box?.querySelector<HTMLElement>('[data-now="true"]');
     if (!box || !line) return;
     const still = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    // 우리가 옮긴 것을 사람이 손댄 것으로 세지 않게 표시해 둔다(부드럽게 옮기는 동안 scroll 이 계속 난다).
+    autoAt.current = Date.now();
     box.scrollTo({
       top: line.offsetTop - (box.clientHeight - line.offsetHeight) / 2,
       behavior: still ? 'auto' : 'smooth',
     });
-  }, [active]);
+  };
+
+  // 대목이 바뀌면 스크롤이 어디에 있든 그 줄로 간다.
+  useEffect(center, [active]);
+
+  // 사람이 손으로 올려 본 뒤에도, 재생 중이면 잠시 뒤 지금 대목으로 돌아온다.
+  // 읽는 중에 곧바로 튕겨 돌아오면 성가시므로 손을 뗀 지 4초를 기다린다.
+  useEffect(() => {
+    const box = boxRef.current;
+    const audio = audioRef.current;
+    const line = box?.querySelector<HTMLElement>('[data-now="true"]');
+    if (!box || !audio || !line || audio.paused) return;
+    if (Date.now() - heldAt.current < 4000) return;
+    const top = line.offsetTop - box.scrollTop;
+    const seen = top >= 0 && top + line.offsetHeight <= box.clientHeight;
+    if (!seen) center();
+  }, [now, active]);
 
   const seek = (sec: number | null) => {
     const audio = audioRef.current;
@@ -86,7 +107,8 @@ export default function TranscriptPlayer({
         아래에 같은 글이 녹취록 목록으로 한 번 더 있다 — 읽어 주는 기계에는 그쪽만 보이면 된다.
         여기서는 눈으로 따라 읽고, 누르면 그 자리부터 듣는다.
       */}
-      <div className="lyrics-box" ref={boxRef} aria-hidden>
+      <div className="lyrics-box" ref={boxRef} aria-hidden
+        onScroll={() => { if (Date.now() - autoAt.current > 1000) heldAt.current = Date.now(); }}>
         {groups.map((g, i) => (
           <div key={i} className={`lyrics-group${i === active ? ' is-now' : ''}`} data-now={i === active || undefined}
             onClick={() => seek(g.start)}>

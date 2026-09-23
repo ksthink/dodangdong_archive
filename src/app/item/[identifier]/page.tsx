@@ -155,7 +155,7 @@ export default async function ItemPage({ params }: Params) {
 
         {segments.length > 0 && (
           <section className="section" id="transcript">
-            <h2 className="section-title"><span>녹취록</span><span className="meta-value">구간 {segments.length}개</span></h2>
+            {/* 제목 줄에 펼침 손잡이와 찾기가 붙어 있어 h2 도 컴포넌트가 그린다 */}
             <TranscriptView segments={segments} playerId={player ? `media-${player.id}` : null}
               reviewed={!!transcript?.reviewed} />
           </section>
