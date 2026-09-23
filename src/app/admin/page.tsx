@@ -10,7 +10,8 @@ export default async function AdminPage() {
     supabase.from('item').select('*', { count: 'exact', head: true }),
     supabase.from('item').select('*', { count: 'exact', head: true }).eq('access_level', 'public'),
     supabase.from('bundle').select('*', { count: 'exact', head: true }),
-    supabase.from('story').select('*', { count: 'exact', head: true }),
+    // 이야기는 collection 의 kind='story' 다(그 밖의 kind 는 세지 않는다)
+    supabase.from('collection').select('*', { count: 'exact', head: true }).eq('kind', 'story'),
     supabase.from('person').select('*', { count: 'exact', head: true }),
   ]);
 
