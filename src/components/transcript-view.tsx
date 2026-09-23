@@ -14,11 +14,10 @@ import { formatTime, type Segment } from '@/lib/transcript';
  * 재생기가 없으면(원본이 아직 없으면) 시각은 글자로만 남는다.
  */
 export default function TranscriptView({
-  segments, playerId, reviewed,
+  segments, playerId,
 }: {
   segments: Segment[];
   playerId: string | null;
-  reviewed: boolean;
 }) {
   const [now, setNow] = useState<number | null>(null);
   const [open, setOpen] = useState(false);
@@ -81,10 +80,6 @@ export default function TranscriptView({
 
       {shown && (
         <div id={listId}>
-          {/* 검토를 마친 녹취록은 아무 말도 붙이지 않는다. 미덥지 않을 때만 알린다. */}
-          {!reviewed && (
-            <p className="help transcript-state">아직 원음과 대조하지 않은 녹취록이다. 들리는 것과 다를 수 있다.</p>
-          )}
           {rows.length === 0 ? (
             <p className="help">그 말이 든 구간이 없다.</p>
           ) : (

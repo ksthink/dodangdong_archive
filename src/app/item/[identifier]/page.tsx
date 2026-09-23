@@ -38,7 +38,7 @@ export default async function ItemPage({ params }: Params) {
       .eq('item_id', item.id).in('role', ['original', 'stream', 'thumb']).order('created_at'),
     supabase.from('item_subject').select('subject(label)').eq('item_id', item.id),
     supabase.from('item_person').select('role, person(display_name, identifier)').eq('item_id', item.id),
-    supabase.from('transcript').select('segments, reviewed').eq('item_id', item.id).maybeSingle(),
+    supabase.from('transcript').select('segments').eq('item_id', item.id).maybeSingle(),
   ]);
 
   // 관계는 하나여도 배열로 올 수 있다. 첫 것만 쓴다.
@@ -156,8 +156,7 @@ export default async function ItemPage({ params }: Params) {
         {segments.length > 0 && (
           <section className="section" id="transcript">
             {/* 제목 줄에 펼침 손잡이와 찾기가 붙어 있어 h2 도 컴포넌트가 그린다 */}
-            <TranscriptView segments={segments} playerId={player ? `media-${player.id}` : null}
-              reviewed={!!transcript?.reviewed} />
+            <TranscriptView segments={segments} playerId={player ? `media-${player.id}` : null} />
           </section>
         )}
 
