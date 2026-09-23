@@ -130,7 +130,7 @@ export default async function AdminPage() {
 
               {/* 무엇이 자리를 차지하는지 — 큰 표부터. 딸린 인덱스까지 더한 크기다 */}
               {biggest.length > 0 && (
-                <ul className="storage-formats">
+                <ul className="storage-rows is-tables">
                   {biggest.map((t) => (
                     <li key={t.name}>
                       <span className="meta-label">{TABLE_LABEL[t.name] ?? t.name}</span>
@@ -161,7 +161,7 @@ export default async function AdminPage() {
               {formats.length === 0 ? (
                 <p className="meta-value" style={{ marginTop: 'var(--space-4)' }}>아직 올린 파일이 없다.</p>
               ) : (
-                <ul className="storage-formats">
+                <ul className="storage-rows is-files">
                   {formats.map(([mime, { count, bytes }]) => (
                     <li key={mime}>
                       <span className="meta-label">{KIND_LABEL[mime.split('/')[0]] ?? '그 밖'}</span>

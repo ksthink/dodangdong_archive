@@ -199,20 +199,25 @@ a:hover { text-decoration: underline; text-decoration-thickness: var(--stroke); 
 .meter-fill { height: 100%; background: var(--ink); }
 
 /* 형식마다 — 갈래 · 형식 · 개수 · 막대 · 용량 */
-/* Google Drive 칸 안에 들어간다 — 칸이 반 폭이라 열을 글자에 맞춰 좁힌다 */
-.storage-formats { display: grid; gap: var(--space-2); margin-top: var(--space-4); border-top: var(--stroke) solid var(--rule); padding-top: var(--space-3); }
-.storage-formats li {
-  display: flex; align-items: center; gap: var(--space-2);
+/* 칸 안에 들어가는 내역 — 열 폭을 고정해 막대가 줄마다 같은 자리에서 시작하고 끝난다.
+   파일 쪽은 갈래·형식·개수 셋, 표 쪽은 이름·행 둘이라 격자를 따로 둔다. */
+.storage-rows {
+  display: grid; gap: var(--space-2);
+  margin-top: var(--space-4); padding-top: var(--space-3);
+  border-top: var(--stroke) solid var(--rule);
+}
+.storage-rows li {
+  display: grid; align-items: center; gap: var(--space-2);
   border-bottom: var(--stroke) solid var(--rule); padding-bottom: var(--space-2);
 }
-.storage-formats .meter { flex: 1 1 auto; min-width: 40px; }
-.storage-formats .storage-bytes { flex: 0 0 auto; }
+.storage-rows.is-files li { grid-template-columns: 36px 48px 40px 1fr 60px; }
+.storage-rows.is-tables li { grid-template-columns: 96px 40px 1fr 60px; }
+.storage-rows .meter { margin: 0; }
 .storage-format { font: var(--text-meta-value); color: var(--ink); }
 .storage-bytes { text-align: right; }
-.storage-formats .meter { margin: 0; }
 @media (max-width: 559px) {
-  .storage-formats li { flex-wrap: wrap; }
-  .storage-formats .meter { flex-basis: 100%; }
+  .storage-rows.is-files li, .storage-rows.is-tables li { grid-template-columns: 1fr auto; }
+  .storage-rows .meter { grid-column: 1 / -1; }
 }
 
 /* 등록·수정 양식 — 2열, 설명과 주제분류만 두 칸 폭 */
