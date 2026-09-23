@@ -81,7 +81,7 @@ export default function IntroTerminal({ next }: { next: string }) {
 
         <p className="intro-msg intro-line" style={{ '--i': 6 } as React.CSSProperties}>
           이 사이트는 운영자의 가족사 기록을 위한 아카이빙 공간입니다.
-          개인 공간임으로 허가 받지 않은 방문자의 접근을 불허합니다.
+          개인 공간이므로 허가 받지 않은 방문자의 접근을 불허합니다.
         </p>
 
         {!asking ? (
