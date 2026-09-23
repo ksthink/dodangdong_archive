@@ -38,41 +38,14 @@ function readableBytes(n: number): string {
   return `${Math.round(n / 1e2) / 10}KB`;
 }
 
-/**
- * 비중 하나를 원 하나로 그린다. 12시에서 시계 방향으로 먹색을 채운다.
- * 0 이 아니면 아주 작아도 한 조각은 보이게 한다 — 비어 있는 것과 조금 든 것은 다르다.
- */
-function Pie({ ratio, size, tip }: { ratio: number; size: number; tip: string }) {
-  const r = size / 2 - 1;            // 테 두께의 절반만큼 안으로
-  const c = size / 2;
-  const share = Math.max(0, Math.min(1, ratio));
-  // 정확히 한 바퀴면 호가 시작점으로 돌아와 아무것도 그려지지 않는다 — 그때는 원을 채운다.
-  const full = share >= 0.999;
-  const a = 2 * Math.PI * (full ? 0 : Math.max(share, share > 0 ? 0.015 : 0));
-  const x = c + r * Math.sin(a);
-  const y = c - r * Math.cos(a);
-
+/** 얼마나 찼는지. 1% 아래여도 한 칸은 채운다 — 비어 있는 것과 조금 든 것은 다르다. */
+function Meter({ used, limit }: { used: number | null; limit: number }) {
+  const percent = used === null ? 0 : Math.min(100, (used / limit) * 100);
   return (
-    <span className="pie-wrap">
-      {/* 같은 값이 줄에 글자로도 있다 — 읽어 주는 기계에는 이 겹말을 보내지 않는다 */}
-      <span className="pie-tip" aria-hidden>{tip}</span>
-      <svg className="pie" width={size} height={size} viewBox={`0 0 ${size} ${size}`} aria-hidden>
-        <circle cx={c} cy={c} r={r} fill="var(--paper-sunken)" stroke="var(--ink)" strokeWidth="2" />
-        {share > 0 && (full
-          ? <circle cx={c} cy={c} r={r} fill="var(--ink)" />
-          : <path fill="var(--ink)" d={`M ${c} ${c} L ${c} ${c - r} A ${r} ${r} 0 ${share > 0.5 ? 1 : 0} 1 ${x} ${y} Z`} />
-        )}
-      </svg>
-    </span>
+    <div className="meter" aria-hidden>
+      <div className="meter-fill" style={{ width: `${percent > 0 ? Math.max(percent, 1.5) : 0}%` }} />
+    </div>
   );
-}
-
-/** 전체에 견준 비중. 1% 아래는 반올림하면 0% 이 되어 "없다" 로 읽힌다 — 그때는 <1% 로 적는다. */
-function sharePercent(part: number, whole: number): string {
-  if (!whole) return '0%';
-  const percent = (part / whole) * 100;
-  if (percent > 0 && percent < 1) return '<1%';
-  return `${Math.round(percent)}%`;
 }
 
 export default async function AdminPage() {
@@ -112,9 +85,9 @@ export default async function AdminPage() {
     .filter((t) => t.rows > 0)
     .sort((a, b) => b.bytes - a.bytes)
     .slice(0, 6);
-  // 비중은 여섯 줄이 아니라 표 전부에 견준다 — 보이지 않는 표도 자리를 차지한다.
-  const tableTotal = ((tables ?? []) as Table[]).reduce((sum, t) => sum + Number(t.bytes ?? 0), 0);
+  const widestTable = biggest[0]?.bytes ?? 0;
   // 막대는 가장 큰 형식을 가득 찬 것으로 잡는다. 전체 용량에 견주면 죄다 한 점이라 보이지 않는다.
+  const widest = formats[0]?.[1].bytes ?? 0;
 
   return (
     <main className="page">
@@ -144,11 +117,10 @@ export default async function AdminPage() {
           <ul className="storage-grid">
             <li className="card">
               <span className="meta-label">Supabase</span>
-              <p className="storage-use">
-                <Pie ratio={dbBytes === null ? 0 : dbBytes / DB_LIMIT} size={96}
-                  tip={dbBytes === null ? '쓴 양을 읽지 못했다' : `${readableBytes(dbBytes)} / ${readableBytes(DB_LIMIT)}`} />
-                <span className="display">{dbBytes === null ? '—' : sharePercent(dbBytes, DB_LIMIT)}</span>
+              <p className="display" style={{ marginTop: 'var(--space-2)' }}>
+                {dbBytes === null ? '—' : `${Math.round((dbBytes / DB_LIMIT) * 100)}%`}
               </p>
+              <Meter used={dbBytes} limit={DB_LIMIT} />
               <p className="meta-value">
                 {dbBytes === null
                   ? `쓴 양을 읽지 못했다 · 전체 ${readableBytes(DB_LIMIT)}`
@@ -163,9 +135,9 @@ export default async function AdminPage() {
                     <li key={t.name}>
                       <span className="meta-label">{TABLE_LABEL[t.name] ?? t.name}</span>
                       <span className="meta-value">{t.rows}행</span>
-                      <span className="meta-value storage-share">{sharePercent(t.bytes, tableTotal)}</span>
-                      <Pie ratio={tableTotal ? t.bytes / tableTotal : 0} size={24}
-                        tip={`${TABLE_LABEL[t.name] ?? t.name} · ${t.rows}행 · ${readableBytes(t.bytes)}`} />
+                      <div className="meter" aria-hidden>
+                        <div className="meter-fill" style={{ width: widestTable ? `${Math.max((t.bytes / widestTable) * 100, 1.5)}%` : 0 }} />
+                      </div>
                       <span className="meta-value storage-bytes">{readableBytes(t.bytes)}</span>
                     </li>
                   ))}
@@ -175,11 +147,10 @@ export default async function AdminPage() {
 
             <li className="card">
               <span className="meta-label">Google Drive</span>
-              <p className="storage-use">
-                <Pie ratio={driveBytes / DRIVE_LIMIT} size={96}
-                  tip={`${readableBytes(driveBytes)} / ${readableBytes(DRIVE_LIMIT)}`} />
-                <span className="display">{sharePercent(driveBytes, DRIVE_LIMIT)}</span>
+              <p className="display" style={{ marginTop: 'var(--space-2)' }}>
+                {Math.round((driveBytes / DRIVE_LIMIT) * 100)}%
               </p>
+              <Meter used={driveBytes} limit={DRIVE_LIMIT} />
               <p className="meta-value">
                 {readableBytes(driveBytes)} / {readableBytes(DRIVE_LIMIT)}
                 {' · '}{readableBytes(DRIVE_LIMIT - driveBytes)} 남음
@@ -196,10 +167,10 @@ export default async function AdminPage() {
                       <span className="meta-label">{KIND_LABEL[mime.split('/')[0]] ?? '그 밖'}</span>
                       <span className="storage-format">{formatName(mime)}</span>
                       <span className="meta-value">{count}개</span>
-                      {/* 비중은 올린 파일 전체에 견준다. 300GB 에 견주면 죄다 0% 이라 뜻이 없다 */}
-                      <span className="meta-value storage-share">{sharePercent(bytes, driveBytes)}</span>
-                      <Pie ratio={driveBytes ? bytes / driveBytes : 0} size={24}
-                        tip={`${KIND_LABEL[mime.split('/')[0]] ?? '그 밖'} ${formatName(mime)} · ${count}개 · ${readableBytes(bytes)}`} />
+                      {/* 막대는 전체 용량이 아니라 가장 큰 형식에 견준다 — 300GB 에 견주면 죄다 한 점이다 */}
+                      <div className="meter" aria-hidden>
+                        <div className="meter-fill" style={{ width: widest ? `${Math.max((bytes / widest) * 100, 1.5)}%` : 0 }} />
+                      </div>
                       <span className="meta-value storage-bytes">{readableBytes(bytes)}</span>
                     </li>
                   ))}
