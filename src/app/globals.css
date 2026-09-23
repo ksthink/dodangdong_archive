@@ -284,12 +284,27 @@ a:hover { text-decoration: underline; text-decoration-thickness: var(--stroke); 
 .searchbar { display: flex; gap: var(--space-2); margin-top: var(--space-6); max-width: var(--measure); }
 .search-layout { display: grid; gap: var(--space-8); margin-top: var(--space-8); }
 @media (min-width: 900px) { .search-layout { grid-template-columns: 240px 1fr; } }
-.facet-title { font: var(--text-heading); margin-bottom: var(--space-3); display: flex; justify-content: space-between; }
+/* 갈래 이름 · 요소명 · (접는 갈래면) 손잡이가 한 줄에 선다. 이름은 쪼개지 않는다 */
+.facet-title { font: var(--text-heading); margin-bottom: var(--space-3); display: flex; justify-content: space-between;
+  align-items: baseline; gap: var(--space-2); white-space: nowrap; }
 .facets { display: grid; gap: var(--space-1); }
 .facet { display: flex; justify-content: space-between; gap: var(--space-2); padding: var(--space-1) var(--space-2); font: var(--text-body-sm); border: var(--stroke) solid transparent; }
 .facet.is-on { background: var(--ink); color: var(--on-ink); }
 .facet.is-on .meta-value { color: var(--on-ink); }
 .facet.is-empty { color: var(--ink-muted); }
+/* 고른 연대 아래로 해가 붙는다 — 한 칸 들여서 딸린 것임을 보인다 */
+.facets .is-nested { margin: var(--space-1) 0 var(--space-2) var(--space-4); }
+
+/* 접어 두는 분류(연도·인물). 손잡이는 녹취록과 같은 모양·같은 인장색이다.
+   여기서는 <details> 라 자바스크립트 없이 열고 닫는다. */
+.facet-group { margin-top: var(--space-6); }
+.facet-group > summary { cursor: pointer; list-style: none; }
+.facet-group > summary::-webkit-details-marker { display: none; }
+.facet-group > summary::after {
+  content: '▼'; color: var(--mark); font: var(--text-pixel-label);
+}
+.facet-group[open] > summary::after { content: '▲'; }
+.facet-group > summary:hover::after { color: var(--ink); }
 .result-head { display: flex; flex-wrap: wrap; gap: var(--space-4); align-items: baseline; padding-bottom: var(--space-3); border-bottom: var(--stroke-heavy) solid var(--ink); }
 .results li { border-bottom: var(--stroke) solid var(--rule); }
 .result { display: grid; grid-template-columns: 120px 1fr; gap: var(--space-4); padding: var(--space-4) 0; }
