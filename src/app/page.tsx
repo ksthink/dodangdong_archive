@@ -72,10 +72,10 @@ export default async function Home() {
               <li key={code} className="card">
                 <Link href={`/search?type=${code}`}>
                   <span className="meta-label">{code}</span>
-                  {/* 건수는 이름 왼쪽에 같은 크기로. 굵기와 색을 낮춰 이름이 먼저 읽히게 한다 */}
+                  {/* 이름 왼쪽 끝, 건수 오른쪽 끝. 크기는 같고 굵기와 색만 낮춰 이름이 먼저 읽히게 한다 */}
                   <p className="type-line">
-                    <span className="type-count">{byType.get(code) ?? 0}</span>
                     <span className="heading">{label}</span>
+                    <span className="type-count">{byType.get(code) ?? 0}</span>
                   </p>
                 </Link>
               </li>
@@ -85,7 +85,7 @@ export default async function Home() {
 
         <section className="section">
           <h2 className="section-title">
-            인물 <Link className="meta-value" href="/people">최근 손댄 순 · 전체 {peopleCount ?? 0}명</Link>
+            인물 <Link className="meta-value" href="/people">최근 수정 순 8명 · 전체 {peopleCount ?? 0}명</Link>
           </h2>
           {people?.length ? (
             <ul className="person-grid">

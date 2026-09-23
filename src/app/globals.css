@@ -82,8 +82,9 @@ a:hover { text-decoration: underline; text-decoration-thickness: var(--stroke); 
 }
 .card:hover { box-shadow: var(--shadow-pixel); }
 
-/* 형태분류 카드 — 건수를 이름 왼쪽에 나란히. 크기는 같고 색만 한 단계 옅다 */
-.type-line { display: flex; align-items: baseline; gap: var(--space-2); margin-top: var(--space-2); }
+/* 형태분류 카드 — 이름은 왼쪽 끝, 건수는 오른쪽 끝. 크기는 같고 굵기·색만 한 단계 낮다 */
+.type-line { display: flex; align-items: baseline; justify-content: space-between;
+  gap: var(--space-4); margin-top: var(--space-2); }
 .type-count { font: var(--text-body); color: var(--ink-muted); }
 .type-count::after { content: '건'; font: var(--text-body-sm); margin-left: 1px; }
 
