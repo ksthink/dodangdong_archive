@@ -113,8 +113,9 @@
 .intro-key:hover, .intro-key:focus-visible { background: var(--intro-ink); color: var(--intro-paper); outline: 0 }
 .intro-key[disabled] { cursor: default; opacity: 0.4 }
 
-/* 만든 곳에 편지 보내기 — 단추(대괄호)와 헷갈리지 않게 밑줄로 표시한다 */
-.intro-mail { text-decoration: underline; text-underline-offset: 4px; text-decoration-thickness: 2px }
+/* 만든 곳에 편지 보내기. 밑줄은 긋지 않고, 올리면 먹색으로 뒤집혀 누를 수 있음을 알린다.
+   머리글보다 한 단계 작다(48 → 36) */
+.intro-mail { display: inline-block; font-size: 36px; line-height: 48px; text-decoration: none }
 .intro-mail:hover, .intro-mail:focus-visible { background: var(--intro-ink); color: var(--intro-paper); outline: 0 }
 
 /* 네모 커서. 깜빡이지 않는다 — 가만히 놓인 표시다 */
@@ -142,6 +143,7 @@
 @media (max-height: 800px) {
   .intro { font: var(--text-title) }
   .intro-head > div, .intro-form input { font-size: 36px; line-height: 48px }
+  .intro-mail { font-size: 24px; line-height: 36px }
   .intro-logo { width: 144px }
 }
 
@@ -154,6 +156,7 @@
   /* 좁은 화면에서는 본문 크기로 — 갈무리 격자를 지킨다(24px) */
   .intro { font: var(--text-body); padding: 24px 16px }
   .intro-head > div, .intro-form input { font-family: var(--font-mono); font-size: 24px; line-height: 36px }
+  .intro-mail { font-size: 24px; line-height: 36px }
 }
 
 /* 움직임을 줄여 달라고 한 사람에게는 정지 화면으로 */
