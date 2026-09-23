@@ -334,6 +334,8 @@ a:hover { text-decoration: underline; text-decoration-thickness: var(--stroke); 
 /* 연표 — 해별 펼침 */
 .year { border-top: var(--stroke-heavy) solid var(--ink); padding: var(--space-4) 0 var(--space-8); }
 .ages { margin-top: var(--space-2); }
+.ages-one { white-space: nowrap; }
+.ages-sep { color: var(--ink-muted); }
 .year-cols { display: grid; gap: var(--space-6); margin-top: var(--space-4); }
 @media (min-width: 900px) { .year-cols { grid-template-columns: 1fr 2fr 1fr; } }
 .year-cols .label { margin: 0 0 var(--space-2); }

@@ -28,7 +28,7 @@ export default async function ChroniclePage({ searchParams }: { searchParams: Pr
   // 비공개 자료는 RLS 가 행을 주지 않는다 — 연표에서도 조용히 빠진다.
   const [{ data: items }, { data: people }, { data: periods }, { data: world }, { data: links }] = await Promise.all([
     supabase.from('item').select('identifier, title, type, created_edtf, created_start, date_verified, creator_person_id').not('created_edtf', 'is', null),
-    supabase.from('person').select('id, identifier, short_name, display_name, birth_edtf, born_year, died_year')
+    supabase.from('person').select('id, identifier, short_name, real_name, display_name, birth_edtf, born_year, died_year')
       .not('born_year', 'is', null).order('born_year'),
     supabase.from('life_period').select('person_id, label, from_year, to_year, sort_order').order('sort_order'),
     supabase.from('world_event').select('year, label').order('year').order('sort_order'),
@@ -144,16 +144,22 @@ export default async function ChroniclePage({ searchParams }: { searchParams: Pr
                 const events = list.filter((it) => it.type === 'Event');
                 const records = list.filter((it) => it.type !== 'Event');
                 // 나이는 태어난 해가 기록된 사람만 — 그해 − 태어난 해. 추정 생년이면 ~.
+                // 이름은 호칭(할머니)이 아니라 실명으로 — 실명이 없으면 화면 이름을 쓴다.
                 const ages = (people ?? [])
                   .filter((p) => (p.born_year as number) <= y && (p.died_year === null || (p.died_year as number) >= y))
-                  .map((p) => ({ id: p.identifier, name: p.short_name ?? p.display_name, age: y - (p.born_year as number), approx: uncertainBirth(p.birth_edtf) }));
+                  .map((p) => ({ id: p.identifier, name: p.real_name ?? p.display_name, age: y - (p.born_year as number), approx: uncertainBirth(p.birth_edtf) }));
                 return (
                   <article key={y} id={`y${y}`} className="year">
                     <h3 className="title">{y}</h3>
                     {ages.length > 0 && (
                       <p className="meta-value ages">
                         {ages.map((a, i) => (
-                          <span key={a.id}>{i > 0 && ' · '}<Link href={`/people/${a.id}`}>{a.name}</Link> {a.approx ? '~' : ''}{a.age}살</span>
+                          <span key={a.id}>
+                            {i > 0 && <span className="ages-sep" aria-hidden> | </span>}
+                            <span className="ages-one">
+                              <Link href={`/people/${a.id}`}>{a.name}</Link> {a.approx ? '~' : ''}{a.age}세
+                            </span>
+                          </span>
                         ))}
                       </p>
                     )}
