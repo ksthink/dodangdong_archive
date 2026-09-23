@@ -273,13 +273,27 @@ a:hover { text-decoration: underline; text-decoration-thickness: var(--stroke); 
 /* 세로 영상이 화면보다 길어지지 않게 — 남는 자리는 먹색 띠 */
 .media-list video { max-height: 80vh; background: var(--ink); }
 
-/* 음성 스펙트럼 — 재생기 위에 얹는 소리의 모양. 소리가 나는 동안에만 움직인다.
-   캔버스에 직접 그리므로 위의 `animation: none` 이 걸리지 않는다. */
-.spectrum { display: grid; gap: var(--space-2); }
-.spectrum-canvas {
-  display: block; width: 100%;
-  border: var(--stroke) solid var(--ink);
-  background: var(--paper-sunken);
+/* 녹취록이 있는 음성 — 재생기 위에서 대목이 소리를 따라 흐른다.
+   지나간 줄과 올 줄은 흐릿하고 지금 대목만 짙다. 녹취록이 없으면 이 상자를 두지 않는다. */
+.lyrics { display: grid; gap: var(--space-2); }
+.lyrics-box {
+  height: 420px; overflow-y: auto;
+  border: var(--stroke) solid var(--ink); background: var(--paper-sunken);
+  padding: var(--space-8) var(--space-6);
+  display: grid; gap: var(--space-8); align-content: start;
+}
+.lyrics-group { color: var(--ink-muted); opacity: 0.38; cursor: pointer; }
+.lyrics-group.is-now { color: var(--ink); opacity: 1; }
+.lyrics-group p { font: var(--text-body); }
+.lyrics-speaker { font-weight: 700; margin-right: var(--space-2); }
+/* globals.css 맨 위의 `* { transition: none !important }` 를 이 상자 안에서만 뒤집는다.
+   대목이 바뀌는 순간만 물들듯 넘어간다 — 사이트의 다른 곳은 여전히 한 번에 바뀐다. */
+.lyrics-group { transition: opacity 0.25s linear, color 0.25s linear !important; }
+@media (max-width: 559px) {
+  .lyrics-box { height: 300px; padding: var(--space-6) var(--space-4); gap: var(--space-6); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .lyrics-group { transition: none !important; }
 }
 
 /* 상세정보 표 — 요소명은 들어간 면, 행 사이만 rule */

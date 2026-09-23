@@ -6,7 +6,7 @@ import { TYPE_LABEL, ACCESS_LABEL } from '@/lib/labels';
 import SiteHeader from '@/components/site-header';
 import SiteFooter from '@/components/site-footer';
 import TranscriptView from '@/components/transcript-view';
-import AudioSpectrum from '@/components/audio-spectrum';
+import TranscriptPlayer from '@/components/transcript-player';
 import type { Segment } from '@/lib/transcript';
 
 export const dynamic = 'force-dynamic';
@@ -118,7 +118,12 @@ export default async function ItemPage({ params }: Params) {
             {others.map((f) => (
               <li key={f.id}>
                 {f.mime?.startsWith('audio/') ? (
-                  <AudioSpectrum fileId={f.id} src={`/api/media/${f.id}`} />
+                  // 녹취록이 있는 음성만 대목이 흐르는 재생기다. 없으면 재생기만 둔다.
+                  segments.length > 0 && player?.id === f.id ? (
+                    <TranscriptPlayer fileId={f.id} src={`/api/media/${f.id}`} segments={segments} />
+                  ) : (
+                    <audio id={`media-${f.id}`} controls preload="none" src={`/api/media/${f.id}`} />
+                  )
                 ) : f.mime?.startsWith('video/') ? (() => {
                   // 재생용 사본(H.264·목차 앞)이 있으면 그것을 튼다. 원본은 아래 링크로 받는다.
                   const stream = derived(f.id, 'stream');
