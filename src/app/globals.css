@@ -277,7 +277,7 @@ a:hover { text-decoration: underline; text-decoration-thickness: var(--stroke); 
    지나간 줄과 올 줄은 흐릿하고 지금 대목만 짙다. 녹취록이 없으면 이 상자를 두지 않는다. */
 .lyrics { display: grid; gap: var(--space-2); }
 .lyrics-box {
-  height: 420px; overflow-y: auto;
+  overflow-y: auto;
   border: var(--stroke) solid var(--ink); background: var(--paper-sunken);
   padding: var(--space-8) var(--space-6);
   display: grid; gap: var(--space-8); align-content: start;
@@ -289,8 +289,11 @@ a:hover { text-decoration: underline; text-decoration-thickness: var(--stroke); 
 /* globals.css 맨 위의 `* { transition: none !important }` 를 이 상자 안에서만 뒤집는다.
    대목이 바뀌는 순간만 물들듯 넘어간다 — 사이트의 다른 곳은 여전히 한 번에 바뀐다. */
 .lyrics-group { transition: opacity 0.25s linear, color 0.25s linear !important; }
+/* 높이 슬라이더 — 녹취가 길면 넓혀 본다. 브라우저 기본 파란색을 쓰지 않는다. */
+.lyrics-height { display: flex; align-items: center; gap: var(--space-3); }
+.lyrics-height input { flex: 1 1 auto; accent-color: var(--ink); }
 @media (max-width: 559px) {
-  .lyrics-box { height: 300px; padding: var(--space-6) var(--space-4); gap: var(--space-6); }
+  .lyrics-box { padding: var(--space-6) var(--space-4); gap: var(--space-6); }
 }
 @media (prefers-reduced-motion: reduce) {
   .lyrics-group { transition: none !important; }

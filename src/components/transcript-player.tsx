@@ -16,6 +16,13 @@ import type { Segment } from '@/lib/transcript';
  * `media-<파일 id>` 로 이 요소를 찾아 자리를 옮기므로 id 를 바꾸지 않는다.
  */
 
+/** 상자 높이 — 녹취가 길면 넓혀 본다. 고른 높이는 이 브라우저에 기억해 둔다. */
+const HEIGHT_MIN = 240;
+const HEIGHT_DEFAULT = 420;
+const HEIGHT_MAX = 900;
+const HEIGHT_STEP = 60;
+const HEIGHT_KEY = 'transcript-player-height';
+
 /** 시각이 같은 줄과 시각 없는 줄은 한 대목이다 — 묻고 답하는 대목, `(웃음)` 따위. */
 type Group = { start: number | null; lines: Segment[] };
 
@@ -44,10 +51,26 @@ export default function TranscriptPlayer({
   /** 사람이 마지막으로 상자를 굴린 때 · 우리가 마지막으로 옮긴 때 */
   const heldAt = useRef(0);
   const autoAt = useRef(0);
+  const sliderRef = useRef<HTMLInputElement>(null);
+
+  /** 높이는 React 가 들고 있지 않고 DOM 에 바로 입힌다 — 서버가 그린 것과 어긋나지 않게. */
+  const resize = (value: string) => {
+    if (boxRef.current) boxRef.current.style.height = `${Number(value)}px`;
+    try { window.localStorage.setItem(HEIGHT_KEY, value); } catch { /* 기억하지 못해도 이번에는 바뀐다 */ }
+  };
 
   // 지금 대목 — 시작 시각이 지금 이전인 마지막 대목. 아직 아무것도 안 틀었으면 첫 대목을 짚는다.
   let active = groups.findIndex((g) => g.start !== null);
   groups.forEach((g, i) => { if (g.start !== null && g.start <= now + 0.25) active = i; });
+
+  // 지난번에 고른 높이를 뜬 뒤에 입힌다.
+  useEffect(() => {
+    let saved = 0;
+    try { saved = Number(window.localStorage.getItem(HEIGHT_KEY)); } catch { /* 못 읽으면 기본 높이다 */ }
+    if (!(saved >= HEIGHT_MIN && saved <= HEIGHT_MAX)) return;
+    if (boxRef.current) boxRef.current.style.height = `${saved}px`;
+    if (sliderRef.current) sliderRef.current.value = String(saved);
+  }, []);
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -107,7 +130,7 @@ export default function TranscriptPlayer({
         아래에 같은 글이 녹취록 목록으로 한 번 더 있다 — 읽어 주는 기계에는 그쪽만 보이면 된다.
         여기서는 눈으로 따라 읽고, 누르면 그 자리부터 듣는다.
       */}
-      <div className="lyrics-box" ref={boxRef} aria-hidden
+      <div className="lyrics-box" ref={boxRef} aria-hidden style={{ height: HEIGHT_DEFAULT }}
         onScroll={() => { if (Date.now() - autoAt.current > 1000) heldAt.current = Date.now(); }}>
         {groups.map((g, i) => (
           <div key={i} className={`lyrics-group${i === active ? ' is-now' : ''}`} data-now={i === active || undefined}
@@ -121,6 +144,11 @@ export default function TranscriptPlayer({
           </div>
         ))}
       </div>
+      <label className="lyrics-height">
+        <span className="meta-label">높이</span>
+        <input ref={sliderRef} type="range" min={HEIGHT_MIN} max={HEIGHT_MAX} step={HEIGHT_STEP}
+          defaultValue={HEIGHT_DEFAULT} onChange={(e) => resize(e.target.value)} />
+      </label>
       <audio ref={audioRef} id={`media-${fileId}`} controls preload="none" src={src} />
     </div>
   );
