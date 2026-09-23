@@ -20,7 +20,13 @@ npm run tokens    # design/tokens.json → src/app/tokens.css
 ```
 
 **시험 코드가 없다.** 단위 시험 틀을 두지 않았다. 고친 것은 `npm run lint && npm run build` 를
-통과시킨 뒤, `npm start` 로 띄워 **실제 화면에서 확인한다**. 이 컴퓨터에는 Playwright 가
+통과시킨 뒤, `npm start` 로 띄워 **실제 화면에서 확인한다**.
+
+주의: `npm run build` 는 `✓ Compiled successfully` 를 찍은 **뒤에** 타입 검사를 한다
+(`Running TypeScript …`). 거기서 나는 오류는 `src/...: error TS2345:` 와 `Failed to type check.` 로
+소문자다 — 출력을 `grep -E "Compiled successfully|Error"` 처럼 걸러 보면 **실패를 놓친다.**
+종료 코드(`${PIPESTATUS[0]}`)를 보거나 마지막 20줄을 그대로 본다. Turbopack 이 앞선 결과를
+재활용하므로, 못 미덥거든 `rm -rf .next` 하고 다시 돌린다. 이 컴퓨터에는 Playwright 가
 `/home/ubuntu/designlab/node_modules` 에 있고 브라우저는 `~/.cache/ms-playwright/chromium-1234/chrome-linux64/chrome`
 이다. 스크립트를 그 디렉터리에 두고 `executablePath` 를 넘겨 쓴다.
 

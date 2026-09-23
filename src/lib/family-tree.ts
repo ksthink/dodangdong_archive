@@ -20,6 +20,8 @@ export type TreePerson = {
   death_edtf: string | null;
   born_year: number | null;
   relation_to_root: string | null;
+  /* 가계도가 쓰지는 않지만, outsiders 를 그대로 인물 카드로 그리므로 함께 들고 다닌다 */
+  face_file_id: string | null;
 };
 export type TreeRelation = { from_person_id: string; to_person_id: string; kind: 'parent' | 'spouse' };
 
