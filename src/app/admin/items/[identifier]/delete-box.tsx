@@ -4,10 +4,12 @@ import { useState } from 'react';
 
 /** 삭제는 되돌릴 수 없다. 식별자를 그대로 다시 써야 버튼이 열린다. */
 export default function DeleteBox({
-  identifier, action,
+  identifier, action, what,
 }: {
   identifier: string;
   action: (form: FormData) => Promise<void>;
+  /** 무엇이 함께 사라지는지. 적지 않으면 자료를 지우는 말로 적는다. */
+  what?: string;
 }) {
   const [typed, setTyped] = useState('');
   const ready = typed.trim() === identifier;
@@ -15,7 +17,7 @@ export default function DeleteBox({
   return (
     <form action={action} className="danger">
       <p className="body-sm">
-        이 자료와 여기 딸린 원본 파일, 이야기에 엮인 자리가 함께 사라진다. 되돌릴 수 없다.
+        {what ?? '이 자료와 여기 딸린 원본 파일, 이야기에 엮인 자리가 함께 사라진다.'} 되돌릴 수 없다.
       </p>
       <label className="label" htmlFor="confirm">지우려면 {identifier} 를 그대로 쓴다</label>
       <input

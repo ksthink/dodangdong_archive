@@ -19,6 +19,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           <Link href="/admin/hero">첫 화면</Link>
           <Link href="/admin/items">자료 목록</Link>
           <Link href="/admin/items/new">자료 등록</Link>
+          <Link href="/admin/bundles">묶음</Link>
           <Link href="/admin/stories">이야기</Link>
           <Link href="/admin/people">인물</Link>
           <Link href="/admin/drive">GDRIVE</Link>
