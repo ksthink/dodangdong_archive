@@ -199,17 +199,18 @@ a:hover { text-decoration: underline; text-decoration-thickness: var(--stroke); 
 .meter-fill { height: 100%; background: var(--ink); }
 
 /* 형식마다 — 갈래 · 형식 · 개수 · 막대 · 용량 */
-.storage-formats { display: grid; gap: var(--space-2); margin-top: var(--space-3); }
+/* Google Drive 칸 안에 들어간다 — 칸이 반 폭이라 열을 글자에 맞춰 좁힌다 */
+.storage-formats { display: grid; gap: var(--space-2); margin-top: var(--space-4); border-top: var(--stroke) solid var(--rule); padding-top: var(--space-3); }
 .storage-formats li {
-  display: grid; align-items: center; gap: var(--space-3);
-  grid-template-columns: 48px 72px 48px 1fr 72px;
+  display: grid; align-items: center; gap: var(--space-2);
+  grid-template-columns: auto auto auto 1fr auto;
   border-bottom: var(--stroke) solid var(--rule); padding-bottom: var(--space-2);
 }
 .storage-format { font: var(--text-meta-value); color: var(--ink); }
 .storage-bytes { text-align: right; }
 .storage-formats .meter { margin: 0; }
 @media (max-width: 559px) {
-  .storage-formats li { grid-template-columns: 48px 1fr 64px; }
+  .storage-formats li { grid-template-columns: auto auto 1fr; }
   .storage-formats .meter { grid-column: 1 / -1; }
 }
 

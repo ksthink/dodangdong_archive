@@ -28,6 +28,16 @@ function readableBytes(n: number): string {
   return `${Math.round(n / 1e2) / 10}KB`;
 }
 
+/** 얼마나 찼는지. 1% 아래여도 한 칸은 채운다 — 비어 있는 것과 조금 든 것은 다르다. */
+function Meter({ used, limit }: { used: number | null; limit: number }) {
+  const percent = used === null ? 0 : Math.min(100, (used / limit) * 100);
+  return (
+    <div className="meter" aria-hidden>
+      <div className="meter-fill" style={{ width: `${percent > 0 ? Math.max(percent, 1.5) : 0}%` }} />
+    </div>
+  );
+}
+
 export default async function AdminPage() {
   const supabase = await createClient();
   // 관리자에게는 RLS 가 비공개까지 모두 돌려준다.
@@ -86,50 +96,53 @@ export default async function AdminPage() {
         <section className="section">
           <h2 className="section-title">저장소</h2>
           <ul className="storage-grid">
-            {([
-              ['Supabase', dbBytes, DB_LIMIT, '기술(더블린코어)이 사는 곳'],
-              ['Google Drive', driveBytes, DRIVE_LIMIT, `원본과 파생 ${files?.length ?? 0}개`],
-            ] as [string, number | null, number, string][]).map(([label, used, limit, note]) => {
-              const percent = used === null ? 0 : Math.min(100, (used / limit) * 100);
-              return (
-                <li key={label} className="card">
-                  <span className="meta-label">{label}</span>
-                  <p className="display" style={{ marginTop: 'var(--space-2)' }}>
-                    {used === null ? '—' : `${Math.round(percent)}%`}
-                  </p>
-                  {/* 막대는 1% 아래여도 한 칸은 보인다 — 비어 있는 것과 조금 든 것은 다르다 */}
-                  <div className="meter" aria-hidden>
-                    <div className="meter-fill" style={{ width: used === null ? 0 : `${Math.max(percent, percent > 0 ? 1.5 : 0)}%` }} />
-                  </div>
-                  <p className="meta-value">
-                    {used === null
-                      ? `쓴 양을 읽지 못했다 · 전체 ${readableBytes(limit)}`
-                      : `${readableBytes(used)} / ${readableBytes(limit)} · ${readableBytes(limit - used)} 남음`}
-                  </p>
-                  <p className="meta-value">{note}</p>
-                </li>
-              );
-            })}
-          </ul>
+            <li className="card">
+              <span className="meta-label">Supabase</span>
+              <p className="display" style={{ marginTop: 'var(--space-2)' }}>
+                {dbBytes === null ? '—' : `${Math.round((dbBytes / DB_LIMIT) * 100)}%`}
+              </p>
+              <Meter used={dbBytes} limit={DB_LIMIT} />
+              <p className="meta-value">
+                {dbBytes === null
+                  ? `쓴 양을 읽지 못했다 · 전체 ${readableBytes(DB_LIMIT)}`
+                  : `${readableBytes(dbBytes)} / ${readableBytes(DB_LIMIT)} · ${readableBytes(DB_LIMIT - dbBytes)} 남음`}
+              </p>
+              <p className="meta-value">기술(더블린코어)이 사는 곳</p>
+            </li>
 
-          <h3 className="label" style={{ marginTop: 'var(--space-8)' }}>형식마다</h3>
-          {formats.length === 0 ? (
-            <p className="empty">아직 올린 파일이 없다.</p>
-          ) : (
-            <ul className="storage-formats">
-              {formats.map(([mime, { count, bytes }]) => (
-                <li key={mime}>
-                  <span className="meta-label">{KIND_LABEL[mime.split('/')[0]] ?? '그 밖'}</span>
-                  <span className="storage-format">{formatName(mime)}</span>
-                  <span className="meta-value">{count}개</span>
-                  <div className="meter" aria-hidden>
-                    <div className="meter-fill" style={{ width: widest ? `${Math.max((bytes / widest) * 100, 1.5)}%` : 0 }} />
-                  </div>
-                  <span className="meta-value storage-bytes">{readableBytes(bytes)}</span>
-                </li>
-              ))}
-            </ul>
-          )}
+            <li className="card">
+              <span className="meta-label">Google Drive</span>
+              <p className="display" style={{ marginTop: 'var(--space-2)' }}>
+                {Math.round((driveBytes / DRIVE_LIMIT) * 100)}%
+              </p>
+              <Meter used={driveBytes} limit={DRIVE_LIMIT} />
+              <p className="meta-value">
+                {readableBytes(driveBytes)} / {readableBytes(DRIVE_LIMIT)}
+                {' · '}{readableBytes(DRIVE_LIMIT - driveBytes)} 남음
+              </p>
+              <p className="meta-value">원본과 파생 {files?.length ?? 0}개</p>
+
+              {/* 파일은 Drive 에 산다 — 형식 내역도 이 칸 안에 둔다 */}
+              {formats.length === 0 ? (
+                <p className="meta-value" style={{ marginTop: 'var(--space-4)' }}>아직 올린 파일이 없다.</p>
+              ) : (
+                <ul className="storage-formats">
+                  {formats.map(([mime, { count, bytes }]) => (
+                    <li key={mime}>
+                      <span className="meta-label">{KIND_LABEL[mime.split('/')[0]] ?? '그 밖'}</span>
+                      <span className="storage-format">{formatName(mime)}</span>
+                      <span className="meta-value">{count}개</span>
+                      {/* 막대는 전체 용량이 아니라 가장 큰 형식에 견준다 — 300GB 에 견주면 죄다 한 점이다 */}
+                      <div className="meter" aria-hidden>
+                        <div className="meter-fill" style={{ width: widest ? `${Math.max((bytes / widest) * 100, 1.5)}%` : 0 }} />
+                      </div>
+                      <span className="meta-value storage-bytes">{readableBytes(bytes)}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </li>
+          </ul>
         </section>
 
     </main>
