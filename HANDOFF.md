@@ -24,6 +24,7 @@
 | --- | --- |
 | 손님 읽기 | **없다.** 앱도 DB도 잠갔다(2026-09-23) |
 | 보안 높음·중간 | H1·M1·M2 닫음. **M3(가입 끄기)만 남았고 대시보드 일이다** |
+| 보안 낮음 | L1~L5 닫음(mime 목록·오류 문구·Drive id·matcher 경계·206 캐시). 남은 것은 L8·L9·L10 |
 | 영상 | 재생 규격(H.264·AAC·moov 앞) 파일만 튼다. 규격 밖 원본은 보존 + 재생용 따로 |
 | 인물 얼굴 | 사진에서 잘라 쓰는 길을 열었다. **아직 한 명도 넣지 않았다**(face 파일 0개) |
 | 배포 | Vercel, 함수는 도쿄(hnd1) — Supabase(ap-northeast-1) 곁 |
@@ -95,8 +96,11 @@ CodePen의 *Fallout Terminal Inspired CSS Theme* 에서 만듦새를 가져왔�
 | 1 | **Supabase 대시보드에서 신규 가입 끄기** (Auth → Sign In / Providers). 지금은 가입이 열려 있으면 누구나 세션을 얻어 문을 지난다. DB가 0행을 주므로 빈 화면이지만, 잠근 사이트가 열리는 셈이다 | SECURITY.md M3 |
 | 2 | 같은 화면에서 **Leaked password protection 켜기** | SECURITY.md L8 |
 | 3 | **얼굴을 실제로 넣어 보기.** 길만 열어 두고 한 명도 넣지 않았다. 사진이 여럿인 사람(할머니·어머니 7장, 아버지 6장, 할아버지 4장)부터 | — |
-| 4 | 원본 프록시에 `nosniff`·`Content-Disposition`, 올리는 쪽에 mime 허용 목록 | SECURITY.md L1 |
-| 5 | 오류 본문의 상류 메시지 감추기, `register` 의 Drive id 검증, matcher 경계(`intro(?:/|$)`), 206 `no-store` | SECURITY.md L2·L3·L4·L5 |
+| ~~4~~ | ~~원본 프록시에 `nosniff`·`Content-Disposition`, 올리는 쪽에 mime 허용 목록~~ **했다** | SECURITY.md L1 |
+| ~~5~~ | ~~오류 본문의 상류 메시지 감추기, `register` 의 Drive id 검증, matcher 경계, 206 `no-store`~~ **했다** | SECURITY.md L2·L3·L4·L5 |
+
+받는 파일 갈래를 `src/lib/media-types.ts` 목록으로 좁혔다(4번). 목록 밖 갈래를 올리면 "받지 않는 갈래다" 로 막힌다 —
+넣어야 할 자료가 걸리면 그 갈래를 목록에 더한다(html·svg·xml 만 아니면 된다).
 
 ### 3-2. 생각해 볼 것 (사용자 결정 필요)
 

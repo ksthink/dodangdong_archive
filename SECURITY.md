@@ -2,7 +2,8 @@
 
 점검일: 2026-09-23 · 대상: `main` `24225e9` 기준, 배포지 https://dodangdong-archive.vercel.app · 점검자: Claude Code(네 갈래 병렬 검토 + 검토자 재확인)
 
-**조치 현황(2026-09-23)**: 높음 1건과 중간 2건(M1·M2)을 같은 날 닫았다 — `b58277d` `8d11846` `16d50c0`. 남은 것은 M3(대시보드에서 가입 끄기)와 낮음·정보 항목이다.
+**조치 현황(2026-09-23)**: 높음 1건과 중간 2건(M1·M2)을 같은 날 닫았다 — `b58277d` `8d11846` `16d50c0`.
+이어서 낮음 5건(L1·L2·L3·L4·L5)을 한 커밋으로 닫았다. 남은 것은 M3(대시보드에서 가입 끄기)와 L8·L9·L10, 정보 항목이다.
 
 > **이 문서는 공개 저장소에 있다.** 아래 "미조치" 항목은 누구나 읽을 수 있는 열린 문제다.
 > 고친 항목은 상태 칸을 "고침(커밋)" 으로 바꾼다. 높음·중간은 되도록 빨리 닫는다.
@@ -13,7 +14,7 @@
 | --- | --- | --- |
 | 높음 | 1 | ~~사이트는 잠갔지만 DB 의 손님(anon) 읽기 정책이 살아 있어 로그인 없이 공개 자료·인물 실명·Drive id·집안 주소가 REST 로 읽힌다~~ **고침 `b58277d`** |
 | 중간 | 3 | ~~`next` 검증이 백슬래시를 통과시키는 열린 리디렉션~~ **고침 `8d11846`** · ~~보안 헤더가 HSTS 하나뿐~~ **고침 `16d50c0`** · 가입이 열려 있으면 비관리자 세션이 문을 지난다(대시보드에서 확인 필요) |
-| 낮음 | 9 | 원본 프록시의 Content-Type·nosniff, 오류 본문의 상류 메시지, matcher 접두어 매칭, 개발 의존성 취약점 등 |
+| 낮음 | 9 | ~~원본 프록시의 Content-Type·nosniff, 오류 본문의 상류 메시지, Drive id 검증, matcher 접두어 매칭, 206 캐시~~ **다섯 건 고침** · 남은 것은 대시보드(L8)·개발 의존성(L9)·쿠키 구조(L10) |
 | 정보 | 7 | 속도 제한 없음, 스크립트의 `.env.local` 직접 파싱 등 |
 
 비밀값 유출은 **없다**(git 전체 이력·작업 트리·클라이언트 번들 검사). 프로덕션 의존성 취약점 **0건**. 서버 액션 21개 전부 관리자 확인 있음. 인증 문(`src/proxy.ts`)은 경로 조작·인코딩·`..`·이미지 최적화기로 우회되지 않았다.
@@ -129,23 +130,38 @@
 
 ## 낮음
 
-### L1. 원본 프록시가 올린 때의 mime 을 그대로 Content-Type 으로 내고 nosniff 가 없다 — 미조치
+### L1. 원본 프록시가 올린 때의 mime 을 그대로 Content-Type 으로 내고 nosniff 가 없다 — **고침**
+
+> 받는 갈래와 펼치는 갈래를 `src/lib/media-types.ts` 한 곳에 모았다. 올리는 쪽(`/api/drive/session`)이 목록 밖을 400 으로 막고,
+> 내보내는 쪽은 목록에 없으면 `application/octet-stream` + `attachment` 로 돌린다. 응답에 `nosniff`·`Content-Disposition`·`Content-Security-Policy: sandbox`.
+> 지금 있는 파일의 mime 넷(image/jpeg·image/png·audio/wav·video/mp4)은 모두 목록 안이다.
 - `src/app/api/media/[fileId]/route.ts:39`. mime 은 올릴 때 브라우저가 보낸 값 또는 Drive 메타이고 허용 목록 검사가 없다. `text/html`·`image/svg+xml` 이 올라가면 같은 출처에서 스크립트가 돈다(저장형 XSS → 세션 탈취, L10). 올리는 사람이 관리자 한 명이라 낮음.
 - 고침: 응답에 `X-Content-Type-Options: nosniff`, `Content-Disposition: inline; filename="…"`(image/audio/video 밖은 `attachment`), `Content-Security-Policy: sandbox`. 올리는 쪽(`/api/drive/session`)에 mime 허용 목록.
 
-### L2. 오류 본문에 Drive·Supabase 원문 메시지가 실린다 — 미조치
+### L2. 오류 본문에 Drive·Supabase 원문 메시지가 실린다 — **고침**
+
+> 상류가 준 본문은 `console.error` 로 서버 기록에만 남기고, 응답은 고정 문구다(상태 코드는 남긴다).
 - `src/app/api/media/[fileId]/route.ts:50`, `src/app/api/drive/session/route.ts:59`, `src/app/api/drive/register/route.ts:133`, `src/lib/google/drive.ts:93`. `Drive 요청이 실패했다 (403): {…구글 응답 본문…}` 이 그대로 나간다. 로그인한 사람만 본다.
 - 고침: 서버 로그에만 남기고 응답은 고정 문구로.
 
-### L3. `register` 가 검증 실패 때 요청이 준 Drive id 를 지우고, Drive 경로에 id 를 인코딩 없이 넣는다 — 미조치
+### L3. `register` 가 검증 실패 때 요청이 준 Drive id 를 지우고, Drive 경로에 id 를 인코딩 없이 넣는다 — **고침**
+
+> `isDriveId()`·`isArchiveName()`(`src/lib/google/naming.ts`). `register` 가 id 모양을 먼저 보고,
+> `fileMeta`·`fileStream`·`deleteFile` 이 id 를 검사한 뒤 `encodeURIComponent` 로 넣는다.
+> 지우기는 이 앱의 이름 규칙에 맞는 파일에만 한다.
 - `src/app/api/drive/register/route.ts:95`(`deleteFile(driveFileId)`), `src/lib/google/drive.ts:209,229`(`/files/${fileId}`). 관리자 세션이 있어야 하므로 외부 공격자는 못 쓴다. 잘못된 `derivedFrom` 하나로 앱이 만든 임의 Drive 파일을 지울 수 있고, id 에 `?`·`/` 가 들어오면 API 경로가 바뀐다.
 - 고침: `driveFileId` 를 `/^[\w-]+$/` 로 걸고 `encodeURIComponent` 로 넣는다. 지우기는 이름이 규칙에 맞는 파일에만.
 
-### L4. matcher 가 `intro`·`favicon.ico` 를 접두어로만 뺀다 — 미조치
+### L4. matcher 가 `intro`·`favicon.ico` 를 접두어로만 뺀다 — **고침**
+
+> `intro(?:/|$)`·`favicon\.ico$`. `npm start` 에서 `/introduction` `/intro-x` `/favicon.ico-x` 가 307(문 안),
+> `/intro` `/favicon.ico` 는 200 인 것을 확인했다.
 - `src/proxy.ts:51`. `/introduction`, `/intro-x`, `/favicon.ico-x` 는 문 밖이다(침투 시험에서 404 로 확인 — 미들웨어가 돌지 않았다는 뜻). 지금은 그런 라우트가 없어 실해 없음. 앞으로 그런 이름의 라우트가 생기면 무인증 노출된다.
 - 고침: `intro(?:/|$)`, `favicon\.ico$` 로 경계를 준다. `fonts/`·`brand/` 는 슬래시가 있어 그대로 둔다.
 
-### L5. 206 부분 응답이 `s-maxage=60` 으로 edge 에 남을 수 있다 — 추정
+### L5. 206 부분 응답이 `s-maxage=60` 으로 edge 에 남을 수 있다 — **고침**
+
+> 확인하는 대신 막았다. 200 에만 `s-maxage=60`, 206 은 공개 자료라도 `private, no-store`.
 - `src/app/api/media/[fileId]/route.ts:46`. Vercel 이 206 을 캐시하지 않는다고 알려져 있으나 확인하지 못했다. 잠긴 사이트에서 새는 길은 아니다(proxy 가 캐시 조회보다 먼저 돈다 — 추정).
 - 고침: `status === 206` 이면 `no-store`, 200 에만 `s-maxage`.
 
@@ -229,8 +245,8 @@
 | 2 | **M3** 가입 끄기 · **L8** Leaked password protection 켜기 | 높음 | 높음 | **아주 작음** | 대시보드 클릭 두 번. 열려 있으면 누구나 세션을 얻어 문을 지난다. 품이 가장 적으니 1번 작업 전에 먼저 눌러도 된다 |
 | 3 ✓ | **M1** `next` 백슬래시 열린 리디렉션 — 고침 `8d11846` | 높음 | 중 | **아주 작음** | 정규식 한 글자. 피싱에 바로 쓰이는 형태이고 재현이 확인됐다. 한 사람만 쓰는 사이트라 효과는 "운영자 계정 보호" 로 한정 |
 | 4 ✓ | **M2** 보안 헤더·CSP · `poweredByHeader: false` — 고침 `16d50c0` | 중 | **높음** | 작음 | 아직 XSS 는 없지만, 세션 쿠키가 `httpOnly` 가 아니라(L10) XSS 하나면 계정이 나간다. CSP 와 `frame-ancestors` 가 그 뒤를 받치는 유일한 방어선. `next.config.ts` 한 곳 |
-| 5 | **L1** 원본 프록시 `nosniff`·`Content-Disposition`·mime 허용 목록 | 낮음 | 중 | 작음 | 저장형 XSS 의 길(html·svg 업로드)을 닫는다. 4번 CSP 와 짝이다 |
-| 6 | **L4** matcher 경계 · **L3** Drive id 검증·삭제 조건 · **L2** 오류 본문 고정 · **L5** 206 `no-store` | 낮음 | 낮음 | 작음 | 넷 다 지금 실해는 없고 "앞으로 생길 구멍" 이다. 라우트 파일 세 개를 한 커밋으로 |
+| 5 ✓ | **L1** 원본 프록시 `nosniff`·`Content-Disposition`·mime 허용 목록 — 고침 | 낮음 | 중 | 작음 | 저장형 XSS 의 길(html·svg 업로드)을 닫는다. 4번 CSP 와 짝이다 |
+| 6 ✓ | **L4** matcher 경계 · **L3** Drive id 검증·삭제 조건 · **L2** 오류 본문 고정 · **L5** 206 `no-store` — 고침 | 낮음 | 낮음 | 작음 | 넷 다 지금 실해는 없고 "앞으로 생길 구멍" 이다. 라우트 파일 세 개를 한 커밋으로 |
 | 7 | **L9** `vercel` devDependency 정리 | 낮음 | 낮음 | 작음 | 배포되는 앱과 무관. audit 가 빨간 것만 없앤다 |
 | 8 | 정보 항목(`server-only` 표시, `unlink`·`signOut` 확인, `/login` → `/intro`, 스크립트 env 통일, seed 매니페스트 gitignore) | 낮음 | 낮음 | 작음 | 손이 갈 때 |
 | — | **L10** 세션 쿠키 `httpOnly` | 낮음 | 높음 | **큼** | 효과는 크지만 로그인 구조를 갈아엎어야 한다. 4번 CSP 로 대신하고 보류 |
@@ -240,5 +256,7 @@
 - **오늘 안에** — 1·2·3. 새고 있는 것(1), 클릭 두 번(2), 한 글자(3).
 - **이번 주** — 4·5. XSS 가 생겼을 때의 방어선.
 - **여유 있을 때** — 6·7·8.
+
+2 를 뺀 1·3·4·5·6 을 닫았다. 남은 것은 대시보드 일(2 = M3·L8)과 7·8 이다.
 
 고친 항목은 이 문서의 상태를 "고침(커밋 해시)" 로 바꾼다.

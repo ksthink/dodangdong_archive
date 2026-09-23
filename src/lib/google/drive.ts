@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/admin';
 import { googleClientId, googleClientSecret } from './env';
-import { ROOT_FOLDER_NAME, bundleFolderName } from './naming';
+import { ROOT_FOLDER_NAME, bundleFolderName, isArchiveName, isDriveId } from './naming';
 
 const TOKEN_URL = 'https://oauth2.googleapis.com/token';
 const API = 'https://www.googleapis.com/drive/v3';
@@ -76,7 +76,8 @@ export async function accessToken(): Promise<string> {
 
   const json = await res.json();
   if (!res.ok) {
-    throw new Error(`Google 토큰을 갱신하지 못했다: ${json.error_description ?? json.error ?? res.status}`);
+    console.error('Google 토큰 갱신 실패', json);
+    throw new Error('Google 토큰을 갱신하지 못했다. 관리 → Drive 연결에서 다시 잇는다.');
   }
   cached = { token: json.access_token as string, until: Date.now() + (Number(json.expires_in ?? 3600) - 60) * 1000 };
   return cached.token;
@@ -90,7 +91,9 @@ async function drive(path: string, init: RequestInit = {}) {
     cache: 'no-store',
   });
   if (!res.ok) {
-    throw new Error(`Drive 요청이 실패했다 (${res.status}): ${await res.text()}`);
+    // 구글이 준 본문은 서버 기록에만 남긴다 — 응답으로 내보내면 내부 사정이 함께 나간다.
+    console.error(`Drive ${path} ${res.status}`, await res.text());
+    throw new Error(`Drive 요청이 실패했다 (${res.status}).`);
   }
   return res;
 }
@@ -187,7 +190,10 @@ export async function uploadSession(opts: {
     cache: 'no-store',
   });
 
-  if (!res.ok) throw new Error(`업로드 세션을 열지 못했다 (${res.status}): ${await res.text()}`);
+  if (!res.ok) {
+    console.error(`Drive upload session ${res.status}`, await res.text());
+    throw new Error(`업로드 세션을 열지 못했다 (${res.status}).`);
+  }
   const location = res.headers.get('location');
   if (!location) throw new Error('업로드 세션 주소를 받지 못했다.');
   return location;
@@ -205,8 +211,9 @@ export type DriveFile = {
 };
 
 export async function fileMeta(fileId: string): Promise<DriveFile> {
+  if (!isDriveId(fileId)) throw new Error('파일 id 가 규칙에 맞지 않는다.');
   const res = await drive(
-    `/files/${fileId}?fields=id,name,mimeType,size,md5Checksum,imageMediaMetadata(width,height),videoMediaMetadata(width,height,durationMillis)`,
+    `/files/${encodeURIComponent(fileId)}?fields=id,name,mimeType,size,md5Checksum,imageMediaMetadata(width,height),videoMediaMetadata(width,height,durationMillis)`,
   );
   const f = await res.json();
   const image = f.imageMediaMetadata ?? {};
@@ -223,24 +230,37 @@ export async function fileMeta(fileId: string): Promise<DriveFile> {
   };
 }
 
-/** 자료를 지우면 원본도 지운다 — 남겨 두지 않는다. */
+/**
+ * 자료를 지우면 원본도 지운다 — 남겨 두지 않는다.
+ * 이 앱이 규칙대로 지은 이름의 파일만 지운다(naming.ts). 앱은 drive.file 범위라
+ * 제 손으로 만든 것만 보이지만, 잘못된 id 하나로 다른 자료의 파일을 지우지 않게 한 겹 더 둔다.
+ */
 export async function deleteFile(fileId: string) {
+  if (!isDriveId(fileId)) throw new Error('파일 id 가 규칙에 맞지 않는다.');
+  const meta = await fileMeta(fileId).catch(() => null);
+  if (!meta) return; // 이미 없거나 볼 수 없는 파일은 지운 것으로 본다
+  if (!isArchiveName(meta.name)) {
+    throw new Error('이 앱이 만든 이름이 아니라 지우지 않는다.');
+  }
+
   const token = await accessToken();
-  const res = await fetch(`${API}/files/${fileId}`, {
+  const res = await fetch(`${API}/files/${encodeURIComponent(fileId)}`, {
     method: 'DELETE',
     headers: { Authorization: `Bearer ${token}` },
     cache: 'no-store',
   });
   // 이미 없는 파일은 지운 것으로 본다.
   if (!res.ok && res.status !== 404) {
-    throw new Error(`원본을 지우지 못했다 (${res.status}): ${await res.text()}`);
+    console.error(`Drive delete ${res.status}`, await res.text());
+    throw new Error(`원본을 지우지 못했다 (${res.status}).`);
   }
 }
 
 /** 바이트를 그대로 흘려보낸다. 공개 여부 판단은 부르는 쪽이 한다. */
 export async function fileStream(fileId: string, range: string | null) {
+  if (!isDriveId(fileId)) throw new Error('파일 id 가 규칙에 맞지 않는다.');
   const token = await accessToken();
-  return fetch(`${API}/files/${fileId}?alt=media`, {
+  return fetch(`${API}/files/${encodeURIComponent(fileId)}?alt=media`, {
     headers: {
       Authorization: `Bearer ${token}`,
       ...(range ? { Range: range } : {}),

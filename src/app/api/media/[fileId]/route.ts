@@ -1,8 +1,16 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createClient, getAdmin } from '@/lib/supabase/server';
 import { accessToken, fileStream } from '@/lib/google/drive';
+import { isAllowedMime } from '@/lib/media-types';
 
 export const dynamic = 'force-dynamic';
+
+/** 헤더에 넣을 파일 이름. ASCII 만 따로 남기고 원래 이름은 RFC 5987 로 덧붙인다. */
+function disposition(kind: 'inline' | 'attachment', name: string | null) {
+  if (!name) return kind;
+  const ascii = name.replace(/[^\x20-\x7e]/g, '_').replace(/["\\]/g, '_');
+  return `${kind}; filename="${ascii}"; filename*=UTF-8''${encodeURIComponent(name)}`;
+}
 
 /**
  * 원본 바이트는 늘 이곳을 거친다. Drive 파일 자체는 비공개로 두고,
@@ -17,7 +25,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   // RLS 가 이미 손님에게는 공개 자료의 file 행만 준다. 못 찾으면 없는 것과 같다.
   const { data: file } = await supabase
     .from('file')
-    .select('storage_path, mime, item_id, item(access_level)')
+    .select('storage_path, mime, original_filename, item_id, item(access_level)')
     .eq('id', fileId)
     .maybeSingle();
 
@@ -35,18 +43,33 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       return new NextResponse('원본을 읽지 못했다.', { status: upstream.status });
     }
 
+    // 올린 때의 mime 을 그대로 믿지 않는다 — 목록에 없으면 내려받기로 돌린다.
+    const mime = (file.mime ?? '').toLowerCase();
+    const inline = isAllowedMime(mime);
+
     const headers = new Headers();
-    headers.set('Content-Type', file.mime ?? upstream.headers.get('content-type') ?? 'application/octet-stream');
+    headers.set('Content-Type', inline ? mime : 'application/octet-stream');
     for (const h of ['content-length', 'content-range', 'accept-ranges', 'etag']) {
       const v = upstream.headers.get(h);
       if (v) headers.set(h, v);
     }
     headers.set('Accept-Ranges', 'bytes');
+    // 적어 준 갈래 그대로 읽게 한다. 브라우저가 내용을 보고 짐작하면 위 검사가 헛돈다.
+    headers.set('X-Content-Type-Options', 'nosniff');
+    headers.set('Content-Disposition', disposition(inline ? 'inline' : 'attachment', file.original_filename));
+    // 혹시 펼쳐지더라도 같은 출처의 권한은 주지 않는다.
+    headers.set('Content-Security-Policy', 'sandbox');
     // 공개 자료만 edge 에 잠깐 둔다. 비공개는 어디에도 남기지 않는다.
-    headers.set('Cache-Control', isPublic ? 'public, max-age=0, s-maxage=60' : 'private, no-store');
+    // 부분 응답(206)은 범위마다 다른 바이트라 캐시에 두지 않는다.
+    headers.set(
+      'Cache-Control',
+      isPublic && upstream.status !== 206 ? 'public, max-age=0, s-maxage=60' : 'private, no-store',
+    );
 
     return new NextResponse(upstream.body, { status: upstream.status, headers });
   } catch (cause) {
-    return new NextResponse(cause instanceof Error ? cause.message : '원본을 읽지 못했다.', { status: 500 });
+    // 상류(구글·DB)가 무슨 말을 했는지는 서버 기록에만 남긴다.
+    console.error(`media ${fileId}`, cause);
+    return new NextResponse('원본을 읽지 못했다.', { status: 500 });
   }
 }

@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { createClient, getAdmin } from '@/lib/supabase/server';
 import { bundleFolder, fileMeta, nameTaken, uploadSession } from '@/lib/google/drive';
 import { extOf, faceName, originalName, streamName, thumbName } from '@/lib/google/naming';
+import { isAllowedMime } from '@/lib/media-types';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,6 +13,10 @@ export async function POST(request: NextRequest) {
   const { itemId, name, mimeType, size, role, derivedFrom, faceOf } = await request.json();
   if (!itemId || !name || !size) {
     return NextResponse.json({ error: '자료·파일 이름·크기가 있어야 한다.' }, { status: 400 });
+  }
+  // 받는 갈래를 여기서 한 번 거른다(src/lib/media-types.ts). 내보내는 쪽도 같은 목록을 본다.
+  if (!isAllowedMime(mimeType)) {
+    return NextResponse.json({ error: `받지 않는 갈래다: ${String(mimeType ?? '알 수 없음')}` }, { status: 400 });
   }
 
   try {
@@ -63,14 +68,14 @@ export async function POST(request: NextRequest) {
     const url = await uploadSession({
       folderId,
       name: driveName,
-      mimeType: mimeType || 'application/octet-stream',
+      mimeType,
       size: Number(size),
       origin: request.nextUrl.origin,
     });
 
     return NextResponse.json({ url });
   } catch (cause) {
-    const message = cause instanceof Error ? cause.message : '업로드 세션을 열지 못했다.';
-    return NextResponse.json({ error: message }, { status: 500 });
+    console.error('drive/session', cause);
+    return NextResponse.json({ error: '업로드 세션을 열지 못했다.' }, { status: 500 });
   }
 }

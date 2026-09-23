@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createClient, getAdmin } from '@/lib/supabase/server';
 import { deleteFile, fileMeta } from '@/lib/google/drive';
+import { isDriveId } from '@/lib/google/naming';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,6 +19,10 @@ export async function POST(request: NextRequest) {
   const codecs = Array.isArray(info.codecs) ? info.codecs.filter((c: unknown) => typeof c === 'string' && /^[A-Za-z0-9.]{4}$/.test(c)).slice(0, 4) : [];
   if (!itemId || !driveFileId) {
     return NextResponse.json({ error: '자료와 파일 id 가 있어야 한다.' }, { status: 400 });
+  }
+  // 이 id 는 Drive 주소에 그대로 들어가고 되돌리기(지우기)의 대상이 된다 — 모양부터 본다.
+  if (!isDriveId(driveFileId)) {
+    return NextResponse.json({ error: '파일 id 가 규칙에 맞지 않는다.' }, { status: 400 });
   }
   if (role !== 'original' && role !== 'thumb' && role !== 'stream' && role !== 'face') {
     return NextResponse.json({ error: `알 수 없는 역할: ${role}` }, { status: 400 });
@@ -68,7 +73,7 @@ export async function POST(request: NextRequest) {
     if (role === 'original') await supabase.from('event_log').insert({ item_id: itemId, action: 'file.add' });
     return NextResponse.json({ id: data.id });
   } catch (cause) {
-    const message = cause instanceof Error ? cause.message : '파일을 붙이지 못했다.';
-    return NextResponse.json({ error: message }, { status: 500 });
+    console.error('drive/register', cause);
+    return NextResponse.json({ error: '파일을 붙이지 못했다.' }, { status: 500 });
   }
 }

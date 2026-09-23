@@ -72,3 +72,16 @@ export function faceName(originalDriveName: string, person: string, n = 1): stri
   const base = `${originalDriveName.replace(/\.[^.]+$/, '')}_face_${person}`;
   return ascii(`${n > 1 ? `${base}-${n}` : base}.jpg`);
 }
+
+/**
+ * 이 앱이 규칙대로 만든 이름인가. 지우기 전에 확인하는 데 쓴다 —
+ * 잘못된 요청 하나로 앱이 만들지 않은 Drive 파일까지 지우지 않게.
+ */
+export function isArchiveName(name: string): boolean {
+  return /^DA-\d+_\d{14}(-\d+)?(_thumb|_stream|_face_DP-\d+(-\d+)?)?\.[A-Za-z0-9]{1,5}$/.test(name);
+}
+
+/** Drive 파일 id 의 모양. 경로에 넣기 전에 거른다 — `/` `?` 가 섞이면 부르는 주소가 달라진다. */
+export function isDriveId(id: unknown): id is string {
+  return typeof id === 'string' && /^[\w-]{5,128}$/.test(id);
+}

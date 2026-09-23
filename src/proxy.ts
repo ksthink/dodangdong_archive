@@ -47,6 +47,11 @@ export async function proxy(request: NextRequest) {
   return response;
 }
 
+/**
+ * 문 밖에 두는 길은 경계까지 적는다 — `intro` 로 시작하기만 하면 되는 것이 아니다.
+ * 접두어로만 빼 두면 나중에 `/introduction` 같은 이름이 생기는 순간 문 밖으로 나간다.
+ * `fonts/`·`brand/` 는 슬래시가 경계를 대신한다.
+ */
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon\\.ico|fonts/|brand/|intro).*)'],
+  matcher: ['/((?!_next/static|_next/image|favicon\\.ico$|fonts/|brand/|intro(?:/|$)).*)'],
 };
