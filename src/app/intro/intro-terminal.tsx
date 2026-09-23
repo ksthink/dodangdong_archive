@@ -7,12 +7,11 @@ import { createClient } from '@/lib/supabase/client';
 const SEEN = 'dodangdong-intro-seen';
 
 const HEAD = [
-  'META.PHR ARCHIVE SYSTEM',
+  'SMALL-SCALE ARCHIVE SYSTEM',
   '도당동 아카이브 · DODANGDONG ARCHIVE',
   '----------------------------------------',
   'ARCHIVE v1.0.0',
-  '(c)2026 META.PHR',
-  '- 개인 보관소 -',
+  '©metaphr',
 ];
 
 export default function IntroTerminal({ next }: { next: string }) {
@@ -79,13 +78,13 @@ export default function IntroTerminal({ next }: { next: string }) {
           </div>
         </header>
 
-        <p className="intro-msg intro-line" style={{ '--i': 6 } as React.CSSProperties}>
+        <p className="intro-msg intro-line" style={{ '--i': 5 } as React.CSSProperties}>
           이 사이트는 운영자의 가족사 기록을 위한 아카이빙 공간입니다.
           개인 공간이므로 허가 받지 않은 방문자의 접근을 불허합니다.
         </p>
 
         {!asking ? (
-          <p className="intro-line" style={{ '--i': 7 } as React.CSSProperties}>
+          <p className="intro-line" style={{ '--i': 6 } as React.CSSProperties}>
             <button className="intro-key" type="button" onClick={() => setAsking(true)}>입장</button>
             {' '}
             <span className="intro-caret" aria-hidden>█</span>
