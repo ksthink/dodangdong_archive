@@ -38,13 +38,84 @@ function readableBytes(n: number): string {
   return `${Math.round(n / 1e2) / 10}KB`;
 }
 
-/** 얼마나 찼는지. 1% 아래여도 한 칸은 채운다 — 비어 있는 것과 조금 든 것은 다르다. */
-function Meter({ used, limit }: { used: number | null; limit: number }) {
-  const percent = used === null ? 0 : Math.min(100, (used / limit) * 100);
+/** 전체에 견준 비중. 1% 아래를 반올림하면 0% 이 되어 "없다" 로 읽힌다 — 그때는 <1% 로 적는다. */
+function sharePercent(part: number, whole: number): string {
+  if (!whole) return '0%';
+  const percent = (part / whole) * 100;
+  if (percent > 0 && percent < 1) return '<1%';
+  return `${Math.round(percent)}%`;
+}
+
+/**
+ * 조각을 가르는 회색 단계. 흑백이라 색으로 나눌 수 없어 네 단계와 들어간 면뿐이다.
+ * 그래서 유형은 **큰 것 넷과 "그 밖"** 으로 묶는다 — 더 잘게 나누면 회색이 모자라 구별이 안 된다.
+ */
+const SHADES = ['var(--ink)', 'var(--ink-muted)', 'var(--rule-strong)', 'var(--rule)', 'var(--paper-sunken)'];
+
+type Slice = { label: string; note: string; bytes: number };
+
+/** 큰 것부터 줄 세우고, 회색이 모자라면 나머지를 "그 밖" 한 조각으로 묶는다. */
+function toSlices(all: Slice[]): Slice[] {
+  const sorted = [...all].sort((a, b) => b.bytes - a.bytes);
+  if (sorted.length <= SHADES.length) return sorted;
+  const rest = sorted.slice(SHADES.length - 1);
+  return [...sorted.slice(0, SHADES.length - 1), {
+    label: '그 밖',
+    note: `${rest.length}가지`,
+    bytes: rest.reduce((sum, x) => sum + x.bytes, 0),
+  }];
+}
+
+/** 원 위의 한 자리. 12시에서 시계 방향으로 잰다(turn 은 한 바퀴가 1). */
+function point(c: number, r: number, turn: number) {
+  const a = 2 * Math.PI * turn;
+  return `${(c + r * Math.sin(a)).toFixed(2)} ${(c - r * Math.cos(a)).toFixed(2)}`;
+}
+
+/** 부채꼴 하나. 한 바퀴를 다 돌면 호가 시작점으로 돌아와 아무것도 안 그려지므로 그때는 원을 채운다. */
+function Wedge({ c, r, from, share, fill, seam }: {
+  c: number; r: number; from: number; share: number; fill: string; seam?: boolean;
+}) {
+  if (share <= 0) return null;
+  if (share >= 0.999) return <circle cx={c} cy={c} r={r} fill={fill} />;
   return (
-    <div className="meter" aria-hidden>
-      <div className="meter-fill" style={{ width: `${percent > 0 ? Math.max(percent, 1.5) : 0}%` }} />
-    </div>
+    <path fill={fill} stroke={seam ? 'var(--paper)' : 'none'} strokeWidth={seam ? 1 : 0}
+      d={`M ${c} ${c} L ${point(c, r, from)} A ${r} ${r} 0 ${share > 0.5 ? 1 : 0} 1 ${point(c, r, from + share)} Z`} />
+  );
+}
+
+/** 얼마나 찼는지 — 조각 하나. 0 이 아니면 아주 작아도 한 조각은 남긴다. */
+function UsePie({ ratio, size }: { ratio: number; size: number }) {
+  const r = size / 2 - 1;
+  const c = size / 2;
+  const share = Math.max(0, Math.min(1, ratio));
+  return (
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} aria-hidden>
+      <circle cx={c} cy={c} r={r} fill="var(--paper-sunken)" stroke="var(--ink)" strokeWidth="2" />
+      <Wedge c={c} r={r} from={0} share={share > 0 ? Math.max(share, 0.015) : 0} fill="var(--ink)" />
+    </svg>
+  );
+}
+
+/** 유형이 모두 든 원. 조각마다 회색 단계가 다르고, 사이는 종이색 실선으로 끊는다. */
+function TypePie({ slices, size }: { slices: Slice[]; size: number }) {
+  const r = size / 2 - 1;
+  const c = size / 2;
+  const total = slices.reduce((sum, x) => sum + x.bytes, 0);
+  let turn = 0;
+
+  return (
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} aria-hidden>
+      <circle cx={c} cy={c} r={r} fill="var(--paper-sunken)" stroke="var(--ink)" strokeWidth="2" />
+      {total > 0 && slices.map((slice, i) => {
+        const from = turn;
+        const share = slice.bytes / total;
+        turn += share;
+        return <Wedge key={slice.label} c={c} r={r} from={from} share={share} fill={SHADES[i]} seam />;
+      })}
+      {/* 조각을 다 그린 뒤 테를 다시 두른다 — 조각이 테를 덮기 때문이다 */}
+      <circle cx={c} cy={c} r={r} fill="none" stroke="var(--ink)" strokeWidth="2" />
+    </svg>
   );
 }
 
@@ -60,7 +131,7 @@ export default async function AdminPage() {
     supabase.from('person').select('*', { count: 'exact', head: true }),
   ]);
 
-  // 저장소 — DB 크기는 함수로 묻고(0016), Drive 는 우리가 올린 파일의 합이다(파일이 적어 그대로 더한다).
+  // 저장소 — DB 크기는 함수로 묻고(0016·0017), Drive 는 우리가 올린 파일의 합이다.
   const [{ data: dbSize, error: dbError }, { data: tables }, { data: files }] = await Promise.all([
     supabase.rpc('db_size'),
     supabase.rpc('db_tables'),
@@ -70,24 +141,25 @@ export default async function AdminPage() {
   const dbBytes = dbError || dbSize === null ? null : Number(dbSize);
   const driveBytes = (files ?? []).reduce((sum, f) => sum + Number(f.bytes ?? 0), 0);
 
-  // 형식마다 몇 개에 몇 바이트인지. 큰 것부터 본다 — 자리를 차지하는 것이 무엇인지가 먼저다.
+  // 형식마다 몇 개에 몇 바이트인지 — 원에 넣을 조각으로 바로 만든다.
   const byFormat = new Map<string, { count: number; bytes: number }>();
   for (const f of files ?? []) {
     const mime = (f.mime ?? '').toLowerCase() || 'application/octet-stream';
     const seen = byFormat.get(mime) ?? { count: 0, bytes: 0 };
     byFormat.set(mime, { count: seen.count + 1, bytes: seen.bytes + Number(f.bytes ?? 0) });
   }
-  const formats = [...byFormat.entries()].sort((a, b) => b[1].bytes - a[1].bytes);
+  const fileSlices = toSlices([...byFormat.entries()].map(([mime, { count, bytes }]) => ({
+    label: `${KIND_LABEL[mime.split('/')[0]] ?? '그 밖'} ${formatName(mime)}`,
+    note: `${count}개`,
+    bytes,
+  })));
 
-  // 표는 큰 것 여섯만 본다. 스물두 개를 다 늘어놓으면 벽이 된다.
+  // 빈 표는 빼고 나머지를 모두 원에 넣는다. 크기는 딸린 인덱스까지 더한 값이다.
   type Table = { name: string; rows: number; bytes: number };
-  const biggest = ((tables ?? []) as Table[])
+  const tableSlices = toSlices(((tables ?? []) as Table[])
     .filter((t) => t.rows > 0)
-    .sort((a, b) => b.bytes - a.bytes)
-    .slice(0, 6);
-  const widestTable = biggest[0]?.bytes ?? 0;
-  // 막대는 가장 큰 형식을 가득 찬 것으로 잡는다. 전체 용량에 견주면 죄다 한 점이라 보이지 않는다.
-  const widest = formats[0]?.[1].bytes ?? 0;
+    .map((t) => ({ label: TABLE_LABEL[t.name] ?? t.name, note: `${t.rows}행`, bytes: Number(t.bytes ?? 0) })));
+  const tableTotal = tableSlices.reduce((sum, t) => sum + t.bytes, 0);
 
   return (
     <main className="page">
@@ -117,10 +189,12 @@ export default async function AdminPage() {
           <ul className="storage-grid">
             <li className="card">
               <span className="meta-label">Supabase</span>
-              <p className="display" style={{ marginTop: 'var(--space-2)' }}>
-                {dbBytes === null ? '—' : `${Math.round((dbBytes / DB_LIMIT) * 100)}%`}
-              </p>
-              <Meter used={dbBytes} limit={DB_LIMIT} />
+              <div className="storage-use">
+                <p className="display">{dbBytes === null ? '—' : sharePercent(dbBytes, DB_LIMIT)}</p>
+                {/* 왼쪽 원은 얼마나 찼는지, 오른쪽 원에는 표가 모두 들어 있다 — 아래 목록이 그 범례다 */}
+                <UsePie ratio={dbBytes === null ? 0 : dbBytes / DB_LIMIT} size={72} />
+                <TypePie slices={tableSlices} size={72} />
+              </div>
               <p className="meta-value">
                 {dbBytes === null
                   ? `쓴 양을 읽지 못했다 · 전체 ${readableBytes(DB_LIMIT)}`
@@ -128,16 +202,14 @@ export default async function AdminPage() {
               </p>
               <p className="meta-value">기술(더블린코어)이 사는 곳</p>
 
-              {/* 무엇이 자리를 차지하는지 — 큰 표부터. 딸린 인덱스까지 더한 크기다 */}
-              {biggest.length > 0 && (
-                <ul className="storage-rows is-tables">
-                  {biggest.map((t) => (
-                    <li key={t.name}>
-                      <span className="meta-label">{TABLE_LABEL[t.name] ?? t.name}</span>
-                      <span className="meta-value">{t.rows}행</span>
-                      <div className="meter" aria-hidden>
-                        <div className="meter-fill" style={{ width: widestTable ? `${Math.max((t.bytes / widestTable) * 100, 1.5)}%` : 0 }} />
-                      </div>
+              {tableSlices.length > 0 && (
+                <ul className="storage-rows">
+                  {tableSlices.map((t, i) => (
+                    <li key={t.label}>
+                      <span className="swatch" style={{ background: SHADES[i] }} aria-hidden />
+                      <span className="meta-label">{t.label}</span>
+                      <span className="meta-value">{t.note}</span>
+                      <span className="meta-value storage-share">{sharePercent(t.bytes, tableTotal)}</span>
                       <span className="meta-value storage-bytes">{readableBytes(t.bytes)}</span>
                     </li>
                   ))}
@@ -147,10 +219,11 @@ export default async function AdminPage() {
 
             <li className="card">
               <span className="meta-label">Google Drive</span>
-              <p className="display" style={{ marginTop: 'var(--space-2)' }}>
-                {Math.round((driveBytes / DRIVE_LIMIT) * 100)}%
-              </p>
-              <Meter used={driveBytes} limit={DRIVE_LIMIT} />
+              <div className="storage-use">
+                <p className="display">{sharePercent(driveBytes, DRIVE_LIMIT)}</p>
+                <UsePie ratio={driveBytes / DRIVE_LIMIT} size={72} />
+                <TypePie slices={fileSlices} size={72} />
+              </div>
               <p className="meta-value">
                 {readableBytes(driveBytes)} / {readableBytes(DRIVE_LIMIT)}
                 {' · '}{readableBytes(DRIVE_LIMIT - driveBytes)} 남음
@@ -158,20 +231,17 @@ export default async function AdminPage() {
               <p className="meta-value">원본과 파생 {files?.length ?? 0}개</p>
 
               {/* 파일은 Drive 에 산다 — 형식 내역도 이 칸 안에 둔다 */}
-              {formats.length === 0 ? (
+              {fileSlices.length === 0 ? (
                 <p className="meta-value" style={{ marginTop: 'var(--space-4)' }}>아직 올린 파일이 없다.</p>
               ) : (
-                <ul className="storage-rows is-files">
-                  {formats.map(([mime, { count, bytes }]) => (
-                    <li key={mime}>
-                      <span className="meta-label">{KIND_LABEL[mime.split('/')[0]] ?? '그 밖'}</span>
-                      <span className="storage-format">{formatName(mime)}</span>
-                      <span className="meta-value">{count}개</span>
-                      {/* 막대는 전체 용량이 아니라 가장 큰 형식에 견준다 — 300GB 에 견주면 죄다 한 점이다 */}
-                      <div className="meter" aria-hidden>
-                        <div className="meter-fill" style={{ width: widest ? `${Math.max((bytes / widest) * 100, 1.5)}%` : 0 }} />
-                      </div>
-                      <span className="meta-value storage-bytes">{readableBytes(bytes)}</span>
+                <ul className="storage-rows">
+                  {fileSlices.map((f, i) => (
+                    <li key={f.label}>
+                      <span className="swatch" style={{ background: SHADES[i] }} aria-hidden />
+                      <span className="meta-label">{f.label}</span>
+                      <span className="meta-value">{f.note}</span>
+                      <span className="meta-value storage-share">{sharePercent(f.bytes, driveBytes)}</span>
+                      <span className="meta-value storage-bytes">{readableBytes(f.bytes)}</span>
                     </li>
                   ))}
                 </ul>
