@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
+import { safeNext } from '@/lib/url';
 import IntroTerminal from './intro-terminal';
 import './intro.css';
 
@@ -13,8 +14,8 @@ export default async function IntroPage({
   searchParams: Promise<{ next?: string }>;
 }) {
   const { next } = await searchParams;
-  // 열린 리디렉션을 막는다: 같은 사이트의 경로만 받는다.
-  const target = next && /^\/(?!\/)/.test(next) && !next.startsWith('/intro') ? next : '/';
+  // 열린 리디렉션을 막는다: 같은 사이트의 경로만 받는다(백슬래시 포함, src/lib/url.ts).
+  const target = safeNext(next);
 
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
