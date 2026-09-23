@@ -164,17 +164,22 @@ ADMIN_PASSWORD='…' node scripts/backfill-thumbs.mjs --dry-run
 
 ## 판번호
 
-인트로 머리글에 `ARCHIVE v1.0.0 · UPDATED 2026-09-23` 한 줄이 박힌다. 두 값의 출처는 이렇다.
+인트로 머리글에 지금 돌고 있는 판이 한 줄로 박힌다.
+
+```
+RELEASE 2026-09-23 (00d5d16)
+```
 
 | | 어디서 오나 |
 | --- | --- |
-| 판번호 | `package.json` 의 `version`. GitHub 릴리스 태그(`v1.0.0`)와 같은 값으로 맞춘다 |
-| 갱신 날짜 | **빌드한 때** = 배포한 때(한국 시간). 무엇을 고쳤든 올리면 저절로 바뀐다 |
+| 날짜 | **빌드한 때** = 배포한 때(한국 시간). 무엇을 고쳤든 올리면 저절로 바뀐다 |
+| 배포번호 `(00d5d16)` | 그때 올린 커밋 일곱 자리. Vercel 에서는 `VERCEL_GIT_COMMIT_SHA`, 내 컴퓨터에서는 `git rev-parse` |
 
-둘 다 `next.config.ts` 가 빌드할 때 한 번 정해 굳힌다(`RELEASE`, `BUILT_AT`). 화면에서 시각을 다시 재지 않으므로
-서버와 브라우저가 늘 같은 값을 그린다.
+둘 다 `next.config.ts` 가 빌드할 때 한 번 정해 굳힌다(`BUILT_AT`, `COMMIT`). 화면에서 시각을 다시 재지 않으므로
+서버와 브라우저가 늘 같은 값을 그린다. **화면에 보이는 것이 정확히 어느 판인지는 배포번호로 짚는다** —
+`git show 00d5d16` 하면 그 배포에 무엇이 들어 있는지 그대로 나온다.
 
-판을 올릴 때는 두 곳을 같이 움직인다.
+판번호(`package.json` 의 `version`)는 화면에 내지 않고 GitHub 릴리스에만 쓴다. 판을 올릴 때는 두 곳을 같이 움직인다.
 
 ```bash
 npm version 1.1.0 --no-git-tag-version   # package.json

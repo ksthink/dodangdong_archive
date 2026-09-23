@@ -13,11 +13,11 @@ const HEAD = [
 ];
 
 /**
- * 판번호와 갱신 날짜는 빌드할 때 박힌다(next.config.ts).
- * 판번호는 package.json = GitHub 릴리스 태그, 날짜는 빌드한 때 = 배포한 때다.
+ * 배포한 날짜와 배포번호는 빌드할 때 박힌다(next.config.ts).
+ * 날짜는 빌드한 때 = 배포한 때, 배포번호는 그때 올린 커밋 일곱 자리다.
  */
-const RELEASE = process.env.RELEASE ?? 'v0.0.0';
 const BUILT_AT = process.env.BUILT_AT;
+const COMMIT = process.env.COMMIT ?? 'unknown';
 /** 한국 시간의 날짜만. 서버와 브라우저가 같은 값을 내야 하므로 로캘에 기대지 않는다. */
 const UPDATED = new Date(new Date(BUILT_AT ?? 0).getTime() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
 
@@ -75,7 +75,7 @@ export default function IntroTerminal({ next }: { next: string }) {
       <div className="intro-body">
         <header className="intro-head">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img className="intro-logo" src="/brand/metaphr.png" alt="META.PHR" width={504} height={288} />
+          <img className="intro-logo" src="/brand/metaphr-crt.png" alt="META.PHR" width={384} height={384} />
           <div>
             <h1 className="intro-line" style={{ '--i': 0 } as React.CSSProperties}>{HEAD[0]}</h1>
             {HEAD.slice(1).map((line, i) => (
@@ -83,10 +83,10 @@ export default function IntroTerminal({ next }: { next: string }) {
                 style={{ '--i': i + 1 } as React.CSSProperties}>{line}</p>
             ))}
             <p className="intro-line" style={{ '--i': 3 } as React.CSSProperties}>
-              ARCHIVE {RELEASE} · UPDATED {UPDATED}
+              RELEASE {UPDATED} ({COMMIT})
             </p>
             <p className="intro-line" style={{ '--i': 4 } as React.CSSProperties}>
-              <a className="intro-mail" href="mailto:ksthink@metaphr.dev">©metaphr</a>
+              <a className="intro-mail" href="mailto:ksthink@metaphr.dev">mail to : ksthink@metaphr.dev</a>
             </p>
           </div>
         </header>

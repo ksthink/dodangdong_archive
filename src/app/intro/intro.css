@@ -82,12 +82,10 @@
 /* 좁은 화면에서 머리글이 잘리지 않게 — 줄을 바꾼다 */
 .intro-head > div { min-width: 0; overflow-wrap: anywhere; }
 .intro-logo {
+  /* 그림에 이미 주사선이 그어져 있다 — CSS 로 덧입히지 않는다(무늬가 겹쳐 어른거린다) */
   display: block;
   height: auto;
   width: 192px;
-  /* 로고에도 주사선을 입힌다 — 화면 전체에 깔린 무늬(3px 주기)와 같은 결이다 */
-  mask-image: repeating-linear-gradient(to bottom, #000 0 2px, transparent 2px 3px);
-  -webkit-mask-image: repeating-linear-gradient(to bottom, #000 0 2px, transparent 2px 3px);
 }
 .intro-head p, .intro-head h1 { font: inherit; margin: 0; }
 /* 기계가 제 이름을 대는 머리글 — 고정폭이라야 줄이 가지런하다 */
