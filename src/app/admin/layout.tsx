@@ -1,19 +1,13 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { createClient, getAdmin } from '@/lib/supabase/server';
+import { getAdmin } from '@/lib/supabase/server';
+import { signOut } from '@/lib/auth-actions';
 
 export const dynamic = 'force-dynamic';
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const admin = await getAdmin();
   if (!admin) redirect('/intro?next=/admin');
-
-  async function signOut() {
-    'use server';
-    const supabase = await createClient();
-    await supabase.auth.signOut();
-    redirect('/');
-  }
 
   return (
     <>

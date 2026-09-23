@@ -153,12 +153,20 @@ a:hover { text-decoration: underline; text-decoration-thickness: var(--stroke); 
   border-top: var(--stroke) solid var(--rule);
   display: flex;
   justify-content: space-between;
+  /* 좁은 화면에서는 줄을 바꾼다. 낱말이 글자 단위로 쪼개지지 않게 각 칸은 한 줄로 둔다 */
+  flex-wrap: wrap;
   gap: var(--space-4);
   font: var(--text-body-sm);
   color: var(--ink-muted);
 }
 
 .footer { align-items: center; }
+.footer > * { white-space: nowrap; }
+/* 관리 | 로그아웃 — 꼬리말은 세 칸이므로 둘을 한 칸에 묶는다 */
+.footer-admin { display: flex; gap: var(--space-2); align-items: baseline; }
+.footer-admin > span { color: var(--rule-strong); }
+.footer-out { background: none; border: 0; padding: 0; font: inherit; color: inherit; cursor: pointer; }
+.footer-out:hover { text-decoration: underline; text-decoration-thickness: var(--stroke); text-underline-offset: 4px; }
 
 /* 로그인 — 픽셀 창 하나가 화면 가운데 */
 .page.center { display: grid; place-items: center; min-height: 100vh; }
