@@ -6,10 +6,11 @@ export const dynamic = 'force-dynamic';
 export default async function AdminPage() {
   const supabase = await createClient();
   // 관리자에게는 RLS 가 비공개까지 모두 돌려준다.
-  const [{ count: items }, { count: pub }, { count: bundles }, { count: people }] = await Promise.all([
+  const [{ count: items }, { count: pub }, { count: bundles }, { count: stories }, { count: people }] = await Promise.all([
     supabase.from('item').select('*', { count: 'exact', head: true }),
     supabase.from('item').select('*', { count: 'exact', head: true }).eq('access_level', 'public'),
     supabase.from('bundle').select('*', { count: 'exact', head: true }),
+    supabase.from('story').select('*', { count: 'exact', head: true }),
     supabase.from('person').select('*', { count: 'exact', head: true }),
   ]);
 
@@ -22,7 +23,9 @@ export default async function AdminPage() {
           <ul className="grid">
             {[
               ['자료', items, `공개 ${pub ?? 0}건`],
+              // 묶음은 자료를 담는 그릇(Drive 폴더 하나)이고, 이야기는 자료를 엮어 읽게 만든 글이다
               ['묶음', bundles, '수집한 꾸러미'],
+              ['이야기', stories, '구성한 이야기'],
               ['인물', people, '전거로 등록된 사람'],
             ].map(([label, n, note]) => (
               <li key={String(label)} className="card">
