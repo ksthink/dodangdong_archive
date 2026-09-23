@@ -8,6 +8,9 @@ html {
   /* 밝은 화면만 — 입력칸·스크롤바도 밝게 그리고, 브라우저의 자동 어둡게를 막는다 */
   color-scheme: only light;
   background: var(--paper);
+  /* 스크롤막대 자리를 늘 비워 둔다 — 짧은 화면(음성·영상만 고른 자료 찾기 따위)에서
+     막대가 사라지며 본문이 옆으로 움찔하는 것을 막는다 */
+  scrollbar-gutter: stable;
   /* 픽셀 글꼴은 안티앨리어싱을 끄고 써야 격자가 산다 */
   -webkit-font-smoothing: none;
   -moz-osx-font-smoothing: grayscale;

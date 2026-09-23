@@ -375,6 +375,8 @@
 - `color-scheme: only light` 를 선언한다(`globals.css` 의 `html`, 레이아웃의 `viewport`).
   입력칸·스크롤바도 밝게 그려지고, 휴대폰 Chrome 의 "웹 콘텐츠 자동 어둡게"도 사이트를 뒤집지 않는다.
 - 토큰도 밝은 값 하나씩만 있다(`design/tokens.json`).
+- `scrollbar-gutter: stable` 로 스크롤막대 자리를 늘 비워 둔다. 내용이 짧아 막대가 사라지는 화면
+  (예: 자료 찾기에서 음성·영상·물건만 고른 경우)에서 본문이 7~8px 옆으로 움찔하는 것을 막는다.
 
 ---
 
