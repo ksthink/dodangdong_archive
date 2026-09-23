@@ -2,6 +2,8 @@
 
 점검일: 2026-09-23 · 대상: `main` `24225e9` 기준, 배포지 https://dodangdong-archive.vercel.app · 점검자: Claude Code(네 갈래 병렬 검토 + 검토자 재확인)
 
+**조치 현황(2026-09-23)**: 높음 1건과 중간 2건(M1·M2)을 같은 날 닫았다 — `b58277d` `8d11846` `16d50c0`. 남은 것은 M3(대시보드에서 가입 끄기)와 낮음·정보 항목이다.
+
 > **이 문서는 공개 저장소에 있다.** 아래 "미조치" 항목은 누구나 읽을 수 있는 열린 문제다.
 > 고친 항목은 상태 칸을 "고침(커밋)" 으로 바꾼다. 높음·중간은 되도록 빨리 닫는다.
 
@@ -9,8 +11,8 @@
 
 | 심각도 | 건수 | 요지 |
 | --- | --- | --- |
-| 높음 | 1 | 사이트는 잠갔지만 **DB 의 손님(anon) 읽기 정책이 살아 있어** 로그인 없이 공개 자료·인물 실명·Drive id·집안 주소가 REST 로 읽힌다 |
-| 중간 | 3 | `next` 검증이 백슬래시를 통과시키는 **열린 리디렉션** · 보안 헤더가 HSTS 하나뿐 · 가입이 열려 있으면 비관리자 세션이 문을 지난다 |
+| 높음 | 1 | ~~사이트는 잠갔지만 DB 의 손님(anon) 읽기 정책이 살아 있어 로그인 없이 공개 자료·인물 실명·Drive id·집안 주소가 REST 로 읽힌다~~ **고침 `b58277d`** |
+| 중간 | 3 | ~~`next` 검증이 백슬래시를 통과시키는 열린 리디렉션~~ **고침 `8d11846`** · ~~보안 헤더가 HSTS 하나뿐~~ **고침 `16d50c0`** · 가입이 열려 있으면 비관리자 세션이 문을 지난다(대시보드에서 확인 필요) |
 | 낮음 | 9 | 원본 프록시의 Content-Type·nosniff, 오류 본문의 상류 메시지, matcher 접두어 매칭, 개발 의존성 취약점 등 |
 | 정보 | 7 | 속도 제한 없음, 스크립트의 `.env.local` 직접 파싱 등 |
 
@@ -31,7 +33,12 @@
 
 ## 높음
 
-### H1. 로그인 없이 publishable 키만으로 공개 자료·인물·파일·장소가 REST 로 읽힌다 — 미조치
+### H1. 로그인 없이 publishable 키만으로 공개 자료·인물·파일·장소가 REST 로 읽힌다 — **고침 `b58277d`**
+
+> 0014 마이그레이션으로 anon 의 정책·표 권한·시퀀스·함수·기본 권한을 전부 거두고 `private` 스키마 usage 도 뗐다.
+> 적용 뒤 `person`·`file`·`place`·`item`·`rpc/next_item_identifier` 모두 **401**(permission denied) 확인.
+> 히어로는 세션 클라이언트 + 명시적 공개 필터로 바꾸고 `src/lib/supabase/anon.ts` 를 지웠다.
+> `authenticated` 는 건드리지 않았다 — 채번 함수는 컬럼 default 라 넣는 사람의 권한으로 돌기 때문. 비관리자 세션이 채번을 앞으로 돌릴 수 있는 잔여는 M3(가입 끄기)로 닫는다.
 
 - **어디**: Supabase RLS. `guest_read … to anon for select` 정책이 18개 표에 남아 있다(`supabase/migrations/0002_harden.sql` 이후 그대로). `place`·`subject`·`world_event`·`hero_slot` 은 `using (true)`.
 - **왜 문제인가**: 앱은 `src/proxy.ts` 로 모든 화면을 잠갔지만("손님 읽기는 없다"), 브라우저에 실리는 publishable 키를 들고 `https://<ref>.supabase.co/rest/v1/…` 를 곧장 부르면 DB 가 공개(`access_level = 'public'`) 행을 그대로 준다. 앱의 잠금과 DB 의 문이 어긋나 있다.
@@ -68,14 +75,20 @@
 
 ## 중간
 
-### M1. `next` 검증이 백슬래시를 통과시킨다 — 열린 리디렉션 — 미조치
+### M1. `next` 검증이 백슬래시를 통과시킨다 — 열린 리디렉션 — **고침 `8d11846`**
+
+> `safeNext()`(`src/lib/url.ts`) 한 곳으로 모았다. 더미 origin 에 붙여 파싱한 뒤 origin 이 그대로일 때만 경로+쿼리를 돌려준다.
+> `/\evil.com` `/%5Cevil.com` `//evil.com` `https://evil.com` `/intro` → 모두 `/`, `/people/DP-001` `/search?x=1` → 그대로. 실제 응답에서 확인.
 
 - **어디**: `src/app/intro/page.tsx:18`, `src/app/login/page.tsx:10`. 검증 `/^\/(?!\/)/` 는 "슬래시로 시작하고 둘째 글자가 슬래시가 아님" 만 본다. `/\evil.com`(인코딩 `/%5Cevil.com`)이 통과해 `src/app/intro/intro-terminal.tsx` 의 `window.location.assign(next)` 와 서버 `redirect(target)` 으로 간다. 브라우저는 `\` 를 `/` 로 읽으므로 `//evil.com` = 외부 사이트다.
 - **재현**: 검토자가 정규식을 직접 돌려 `/\evil.com` 통과와 `new URL('/\\evil.com', site).href === 'https://evil.com/'` 을 확인했다. 침투 시험에서 로컬·배포지 모두 RSC 페이로드에 값이 그대로 실렸다. `//evil.com`, `https://evil.com`, `/%2F%2Fevil.com` 은 막힌다.
 - **시나리오**: 운영자에게 `…/intro?next=/\evil.com` 링크를 보낸다. 진짜 인트로에서 로그인하면 성공 직후 외부 사이트로 떨어진다(가짜 "세션 만료" 화면으로 비밀번호를 다시 받는 피싱). 이미 들어와 있으면 서버가 곧바로 보낸다.
 - **고치는 법**: 검증을 한 곳(`src/lib/url.ts`)으로 모으고 `\` 도 막는다 — `/^\/(?![\/\\])/`. 더 단단하게는 `new URL(next, 'http://x')` 로 파싱해 `origin` 이 더미와 같고 `pathname` 이 `/` 로 시작할 때만 `pathname + search` 를 쓴다. `/intro` 로 되돌아가는 값도 계속 거른다.
 
-### M2. 보안 헤더가 HSTS 하나뿐 — 미조치
+### M2. 보안 헤더가 HSTS 하나뿐 — **고침 `16d50c0`**
+
+> `next.config.ts` 에 `headers()` 와 `poweredByHeader: false`. 아래 CSP 그대로(개발 서버에서만 `'unsafe-eval'` 추가)와 `X-Frame-Options: DENY`, `nosniff`, `Referrer-Policy`, `Permissions-Policy`.
+> 인트로에서 글꼴·로고·Supabase 로그인 호출까지 CSP 위반 0건 확인. 배포 뒤 배포지 헤더를 한 번 더 본다.
 
 - **어디**: `next.config.ts` 에 `headers()` 없음. 배포지 `/intro` 응답에 있는 보안 헤더는 `strict-transport-security`(Vercel 기본) 뿐이고 `x-powered-by: Next.js` 가 노출된다.
 
@@ -212,10 +225,10 @@
 
 | 순위 | 항목 | 시급성 | 효과 | 품 | 왜 이 자리인가 |
 | --- | --- | --- | --- | --- | --- |
-| 1 | **H1** anon 읽기 정책·grant 제거 + 히어로 세션 클라이언트 | **최고** | **최고** | 중 | 지금 이 순간 로그인 없이 실명·생몰년·주소·Drive id 가 읽힌다. 유일하게 **현재 진행형** 인 유출이다. 공개 저장소라 열린 사실도 공개돼 있다 |
+| 1 ✓ | **H1** anon 읽기 정책·grant 제거 + 히어로 세션 클라이언트 — 고침 `b58277d` | **최고** | **최고** | 중 | 지금 이 순간 로그인 없이 실명·생몰년·주소·Drive id 가 읽힌다. 유일하게 **현재 진행형** 인 유출이다. 공개 저장소라 열린 사실도 공개돼 있다 |
 | 2 | **M3** 가입 끄기 · **L8** Leaked password protection 켜기 | 높음 | 높음 | **아주 작음** | 대시보드 클릭 두 번. 열려 있으면 누구나 세션을 얻어 문을 지난다. 품이 가장 적으니 1번 작업 전에 먼저 눌러도 된다 |
-| 3 | **M1** `next` 백슬래시 열린 리디렉션 | 높음 | 중 | **아주 작음** | 정규식 한 글자. 피싱에 바로 쓰이는 형태이고 재현이 확인됐다. 한 사람만 쓰는 사이트라 효과는 "운영자 계정 보호" 로 한정 |
-| 4 | **M2** 보안 헤더·CSP · `poweredByHeader: false` | 중 | **높음** | 작음 | 아직 XSS 는 없지만, 세션 쿠키가 `httpOnly` 가 아니라(L10) XSS 하나면 계정이 나간다. CSP 와 `frame-ancestors` 가 그 뒤를 받치는 유일한 방어선. `next.config.ts` 한 곳 |
+| 3 ✓ | **M1** `next` 백슬래시 열린 리디렉션 — 고침 `8d11846` | 높음 | 중 | **아주 작음** | 정규식 한 글자. 피싱에 바로 쓰이는 형태이고 재현이 확인됐다. 한 사람만 쓰는 사이트라 효과는 "운영자 계정 보호" 로 한정 |
+| 4 ✓ | **M2** 보안 헤더·CSP · `poweredByHeader: false` — 고침 `16d50c0` | 중 | **높음** | 작음 | 아직 XSS 는 없지만, 세션 쿠키가 `httpOnly` 가 아니라(L10) XSS 하나면 계정이 나간다. CSP 와 `frame-ancestors` 가 그 뒤를 받치는 유일한 방어선. `next.config.ts` 한 곳 |
 | 5 | **L1** 원본 프록시 `nosniff`·`Content-Disposition`·mime 허용 목록 | 낮음 | 중 | 작음 | 저장형 XSS 의 길(html·svg 업로드)을 닫는다. 4번 CSP 와 짝이다 |
 | 6 | **L4** matcher 경계 · **L3** Drive id 검증·삭제 조건 · **L2** 오류 본문 고정 · **L5** 206 `no-store` | 낮음 | 낮음 | 작음 | 넷 다 지금 실해는 없고 "앞으로 생길 구멍" 이다. 라우트 파일 세 개를 한 커밋으로 |
 | 7 | **L9** `vercel` devDependency 정리 | 낮음 | 낮음 | 작음 | 배포되는 앱과 무관. audit 가 빨간 것만 없앤다 |
