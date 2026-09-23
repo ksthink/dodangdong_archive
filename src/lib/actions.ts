@@ -49,7 +49,6 @@ function itemFields(form: FormData) {
     provenance: text(form, 'provenance'),
     rights: text(form, 'rights'),
     access_level: form.get('access_level') === 'public' ? 'public' : 'private',
-    tags: (text(form, 'tags') ?? '').split(/[,·]/).map((s) => s.trim()).filter(Boolean),
   };
 }
 

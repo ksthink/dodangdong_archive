@@ -16,6 +16,7 @@
 | `0010_transcript_one_per_item.sql` | 자료 하나에 녹취록 하나 |
 | `0011_file_media_info.sql` | 파일에 코덱·목차 위치(faststart) 칸. 역할 설명(원본·썸네일·재생용) |
 | `0012_one_stream_per_original.sql` | 원본 하나에 재생용(stream) 하나 |
+| `0013_tags_retired.sql` | 자유어 태그(`item.tags`)를 접는다 — 주제는 주제분류로만. 적힌 값은 남긴다 |
 
 ## 권한 규칙
 

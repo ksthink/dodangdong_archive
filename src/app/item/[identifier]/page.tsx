@@ -76,7 +76,6 @@ export default async function ItemPage({ params }: Params) {
     ['식별자', 'dc:identifier', item.identifier],
     ['언어', 'dc:language', item.language],
     ['이용조건', 'dc:rights', [ACCESS_LABEL[item.access_level], item.rights].filter(Boolean).join(' · ')],
-    ['태그', 'dc:subject', item.tags?.length ? item.tags.map((t: string) => `#${t}`).join(' ') : null],
   ];
 
   const originals = (files ?? []).filter((f) => f.role === 'original');

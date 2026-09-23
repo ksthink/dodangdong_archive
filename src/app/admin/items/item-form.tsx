@@ -152,11 +152,6 @@ export default function ItemForm({
         </select>
       </Field>
 
-      <Field label="태그" code="dc:subject" help="분류에 없는 자유어. 쉼표로 나눈다.">
-        <input className="field" name="tags"
-          defaultValue={Array.isArray(item?.tags) ? (item.tags as string[]).join(', ') : ''} />
-      </Field>
-
       <div className="form-foot">
         <button className="button" type="submit">{submitLabel}</button>
       </div>
