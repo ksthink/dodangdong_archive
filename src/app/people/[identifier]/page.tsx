@@ -9,6 +9,7 @@ import SiteFooter from '@/components/site-footer';
 import LifeLane, { LaneAxis, LaneLegend, LaneScroller, type LaneRecord } from '@/components/life-lane';
 import { thumbsFor } from '@/lib/thumbs';
 import Thumb from '@/components/thumb';
+import Face from '@/components/face';
 
 export const dynamic = 'force-dynamic';
 
@@ -97,7 +98,7 @@ export default async function PersonPage({ params }: Params) {
         <p className="meta-value"><Link href="/people">인물</Link> · {person.identifier}</p>
 
         <div className="person-head" style={{ marginTop: 'var(--space-4)' }}>
-          <div className="face is-l"><span>{(person.short_name ?? person.display_name).slice(0, 1)}</span></div>
+          <Face fileId={person.face_file_id} name={person.short_name ?? person.display_name} size="l" />
           <div>
             {/* 호칭을 크게, 실명을 작게 — 가족 사이트에서는 "할머니"가 이름보다 먼저 읽힌다 */}
             <h1 className="display">{person.short_name ?? person.display_name}</h1>

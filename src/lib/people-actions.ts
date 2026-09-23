@@ -127,3 +127,44 @@ export async function removeRelation(identifier: string, from: string, to: strin
   }
   revalidatePath(`/admin/people/${identifier}`);
 }
+
+/**
+ * 얼굴 사진을 정한다 — 이 사람과 이어진 자료(나오거나 만든)의 썸네일 가운데 하나.
+ *
+ * 사진을 따로 올리지 않고 아카이브에 이미 있는 것을 가리킨다. 그래야 얼굴에도
+ * 출처가 남고, 자료를 지우면 얼굴도 저절로 떨어진다(face_file_id 는 on delete set null).
+ */
+export async function setFace(identifier: string, personId: string, form: FormData) {
+  await requireAdmin();
+  const supabase = await createClient();
+  const fileId = text(form, 'file_id');
+
+  if (fileId) {
+    const { data: file } = await supabase.from('file').select('id, item_id, mime').eq('id', fileId).maybeSingle();
+    if (!file || !file.mime?.startsWith('image/')) {
+      redirect(withQuery(`/admin/people/${identifier}`, { error: '사진이 아니다.' }));
+    }
+    // 이 사람과 이어진 자료의 사진만 받는다 — 아무 파일이나 얼굴로 붙지 않게.
+    const [{ count: appears }, { count: made }] = await Promise.all([
+      supabase.from('item_person').select('*', { count: 'exact', head: true })
+        .eq('item_id', file.item_id).eq('person_id', personId),
+      supabase.from('item').select('*', { count: 'exact', head: true })
+        .eq('id', file.item_id).eq('creator_person_id', personId),
+    ]);
+    if (!appears && !made) {
+      redirect(withQuery(`/admin/people/${identifier}`, { error: '이 사람과 이어진 자료의 사진이 아니다.' }));
+    }
+  }
+
+  const { error } = await supabase
+    .from('person')
+    .update({ face_file_id: fileId, modified_at: new Date().toISOString() })
+    .eq('identifier', identifier);
+  if (error) throw new Error(`얼굴 사진을 저장하지 못했다: ${error.message}`);
+
+  revalidatePath(`/admin/people/${identifier}`);
+  revalidatePath(`/people/${identifier}`);
+  revalidatePath('/people');
+  revalidatePath('/');
+  redirect(withQuery(`/admin/people/${identifier}`, { saved: 'face' }));
+}

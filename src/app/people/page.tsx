@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import SiteHeader from '@/components/site-header';
 import SiteFooter from '@/components/site-footer';
 import FamilyTree from '@/components/family-tree';
+import Face from '@/components/face';
 import { layoutFamily, type TreeRelation } from '@/lib/family-tree';
 
 export const dynamic = 'force-dynamic';
@@ -11,6 +12,7 @@ export const metadata = { title: '인물 · 도당동 아카이브' };
 type Person = {
   id: string; identifier: string; display_name: string; short_name: string | null; real_name: string | null;
   birth_edtf: string | null; death_edtf: string | null; born_year: number | null; relation_to_root: string | null;
+  face_file_id: string | null;
 };
 
 export default async function PeoplePage({ searchParams }: { searchParams: Promise<{ view?: string }> }) {
@@ -19,7 +21,7 @@ export default async function PeoplePage({ searchParams }: { searchParams: Promi
   // 손님에게는 공개 자료에 한 번이라도 나오는 사람만 온다(RLS).
   const { data: people } = await supabase
     .from('person')
-    .select('id, identifier, display_name, short_name, real_name, birth_edtf, death_edtf, born_year, relation_to_root')
+    .select('id, identifier, display_name, short_name, real_name, birth_edtf, death_edtf, born_year, relation_to_root, face_file_id')
     .order('born_year', { ascending: true, nullsFirst: false });
 
   const ids = (people ?? []).map((p) => p.id);
@@ -43,8 +45,7 @@ export default async function PeoplePage({ searchParams }: { searchParams: Promi
   const card = (p: Person) => (
     <li key={p.id} className="card">
       <Link href={`/people/${p.identifier}`} className="person-card">
-        {/* 얼굴 사진이 없으면 디더 면에 호칭 첫 글자 */}
-        <div className="face"><span>{(p.short_name ?? p.display_name).slice(0, 1)}</span></div>
+        <Face fileId={p.face_file_id} name={p.short_name ?? p.display_name} />
         <div>
           <p className="heading">{p.short_name ?? p.display_name}</p>
           {p.real_name && p.real_name !== p.short_name && <p className="body-sm">{p.real_name}</p>}

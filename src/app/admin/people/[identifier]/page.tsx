@@ -2,10 +2,11 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import {
-  updatePerson, deletePerson, addLifePeriod, removeLifePeriod, addRelation, removeRelation,
+  updatePerson, deletePerson, addLifePeriod, removeLifePeriod, addRelation, removeRelation, setFace,
 } from '@/lib/people-actions';
 import PersonForm from '../person-form';
 import DeleteBox from '../../items/[identifier]/delete-box';
+import Face from '@/components/face';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,6 +25,18 @@ export default async function EditPersonPage({
   const { data: person } = await supabase.from('person').select('*').eq('identifier', identifier).maybeSingle();
   if (!person) notFound();
 
+  // 얼굴 후보: 이 사람이 나오거나 만든 자료의 사진 썸네일
+  const [{ data: appears }, { data: made }] = await Promise.all([
+    supabase.from('item_person').select('item_id').eq('person_id', person.id),
+    supabase.from('item').select('id').eq('creator_person_id', person.id),
+  ]);
+  const itemIds = [...new Set([...(appears ?? []).map((r) => r.item_id), ...(made ?? []).map((r) => r.id)])];
+  const { data: faces } = itemIds.length
+    ? await supabase.from('file')
+        .select('id, item_id, original_filename, item(identifier, title)')
+        .eq('role', 'thumb').in('item_id', itemIds).order('created_at')
+    : { data: [] };
+
   const [{ data: periods }, { data: others }, { data: out }, { data: into }] = await Promise.all([
     supabase.from('life_period').select('*').eq('person_id', person.id).order('sort_order'),
     supabase.from('person').select('id, display_name').neq('id', person.id).order('born_year'),
@@ -40,6 +53,7 @@ export default async function EditPersonPage({
   const remove = deletePerson.bind(null, identifier);
   const addPeriod = addLifePeriod.bind(null, identifier, person.id);
   const addRel = addRelation.bind(null, identifier, person.id);
+  const setFaceHere = setFace.bind(null, identifier, person.id);
 
   return (
     <main className="page">
@@ -49,6 +63,46 @@ export default async function EditPersonPage({
       {error && <p className="notice" role="alert">{error}</p>}
 
       <PersonForm action={save} person={person} submitLabel="고친 것 저장" />
+
+      <section className="section">
+        <h2 className="section-title">얼굴 사진</h2>
+        <p className="help" style={{ marginBottom: 'var(--space-4)' }}>
+          사진을 따로 올리지 않는다. 이 사람이 <strong>나오거나 만든 자료</strong>의 사진 가운데 하나를 고른다 —
+          그래야 얼굴에도 출처가 남고, 그 자료를 지우면 얼굴도 저절로 떨어진다.
+          목록에 없으면 먼저 그 자료의 등장인물에 이 사람을 넣는다.
+        </p>
+        {faces?.length ? (
+          <form action={setFaceHere}>
+            <ul className="facepick">
+              <li>
+                <label className="facepick-one">
+                  <input type="radio" name="file_id" value="" defaultChecked={!person.face_file_id} />
+                  <span className="face"><span>{(person.short_name ?? person.display_name).slice(0, 1)}</span></span>
+                  <span className="meta-value">쓰지 않기</span>
+                </label>
+              </li>
+              {faces.map((f) => {
+                const it = (Array.isArray(f.item) ? f.item[0] : f.item) as { identifier: string; title: string } | null;
+                const on = person.face_file_id === f.id;
+                return (
+                  <li key={f.id}>
+                    <label className="facepick-one">
+                      <input type="radio" name="file_id" value={f.id} defaultChecked={on} />
+                      <Face fileId={f.id} name={person.short_name ?? person.display_name} />
+                      <span className="meta-value">{it?.identifier}</span>
+                    </label>
+                  </li>
+                );
+              })}
+            </ul>
+            <div style={{ marginTop: 'var(--space-4)' }}>
+              <button className="button" type="submit">얼굴 사진 저장</button>
+            </div>
+          </form>
+        ) : (
+          <p className="empty">이 사람과 이어진 자료에 사진이 없다.</p>
+        )}
+      </section>
 
       <section className="section">
         <h2 className="section-title">

@@ -4,6 +4,7 @@ import { resolveHero } from '@/lib/hero';
 import Hero from '@/components/hero';
 import { thumbsFor } from '@/lib/thumbs';
 import Thumb from '@/components/thumb';
+import Face from '@/components/face';
 import SiteHeader from '@/components/site-header';
 import SiteFooter from '@/components/site-footer';
 
@@ -34,7 +35,7 @@ export default async function Home() {
     // 이야기는 히어로가 이미 걸고 있다 — 여기서는 인물을 보인다. 최근에 손댄 여덟 명.
     supabase
       .from('person')
-      .select('id, identifier, display_name, short_name, real_name, birth_edtf, death_edtf', { count: 'exact' })
+      .select('id, identifier, display_name, short_name, real_name, birth_edtf, death_edtf, face_file_id', { count: 'exact' })
       .order('modified_at', { ascending: false })
       .limit(8),
     supabase.from('item').select('type'),
@@ -93,8 +94,7 @@ export default async function Home() {
               {people.map((p) => (
                 <li key={p.id} className="card">
                   <Link href={`/people/${p.identifier}`} className="person-mini">
-                    {/* 얼굴 사진이 없으면 디더 면에 호칭 첫 글자 */}
-                    <div className="face is-s"><span>{(p.short_name ?? p.display_name).slice(0, 1)}</span></div>
+                    <Face fileId={p.face_file_id} name={p.short_name ?? p.display_name} size="s" />
                     <div className="person-mini-text">
                       <p className="heading">{p.short_name ?? p.display_name}</p>
                       {p.real_name && p.real_name !== p.short_name && <p className="body-sm">{p.real_name}</p>}
