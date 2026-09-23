@@ -21,6 +21,7 @@
 | `0015_person_face_crop.sql` | 얼굴을 사진에서 잘라 쓴다 — `file_role` 에 `face`, `person.face_crop`(잘라낸 자리) |
 | `0016_db_size.sql` | 관리 첫 화면의 저장소 칸이 쓸 `public.db_size()` — 관리자만 부른다 |
 | `0017_db_tables.sql` | 같은 칸이 쓸 `public.db_tables()` — 표마다 행 수와 크기. 관리자만 부른다 |
+| `0018_close_identifier_rpc.sql` | 채번 함수를 PUBLIC 에게서 걷는다 — 0014 가 anon 만 걷어 손님이 PUBLIC 을 타고 지나갔다 |
 
 ## 권한 규칙
 

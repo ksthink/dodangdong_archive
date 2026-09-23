@@ -40,6 +40,11 @@
 > 적용 뒤 `person`·`file`·`place`·`item`·`rpc/next_item_identifier` 모두 **401**(permission denied) 확인.
 > 히어로는 세션 클라이언트 + 명시적 공개 필터로 바꾸고 `src/lib/supabase/anon.ts` 를 지웠다.
 > `authenticated` 는 건드리지 않았다 — 채번 함수는 컬럼 default 라 넣는 사람의 권한으로 돌기 때문. 비관리자 세션이 채번을 앞으로 돌릴 수 있는 잔여는 M3(가입 끄기)로 닫는다.
+>
+> **덧(0018)**: 0014 의 `revoke execute … from anon` 만으로는 손님의 채번이 닫히지 않았다. 함수는 만들 때
+> PUBLIC 에 실행 권한이 기본으로 붙어(`proacl` 의 `=X/postgres`) anon 이 제 권한이 아니라 PUBLIC 을 타고
+> 지나갔기 때문이다. 0018 에서 PUBLIC 에게서 걷고 앞으로 만드는 함수의 기본 권한도 막았다.
+> 적용 뒤 `has_function_privilege('anon', …)` 가 셋 다 false, `authenticated` 는 true 인 것을 확인했다.
 
 - **어디**: Supabase RLS. `guest_read … to anon for select` 정책이 18개 표에 남아 있다(`supabase/migrations/0002_harden.sql` 이후 그대로). `place`·`subject`·`world_event`·`hero_slot` 은 `using (true)`.
 - **왜 문제인가**: 앱은 `src/proxy.ts` 로 모든 화면을 잠갔지만("손님 읽기는 없다"), 브라우저에 실리는 publishable 키를 들고 `https://<ref>.supabase.co/rest/v1/…` 를 곧장 부르면 DB 가 공개(`access_level = 'public'`) 행을 그대로 준다. 앱의 잠금과 DB 의 문이 어긋나 있다.
