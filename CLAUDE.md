@@ -26,9 +26,11 @@ npm run tokens    # design/tokens.json → src/app/tokens.css
 (`Running TypeScript …`). 거기서 나는 오류는 `src/...: error TS2345:` 와 `Failed to type check.` 로
 소문자다 — 출력을 `grep -E "Compiled successfully|Error"` 처럼 걸러 보면 **실패를 놓친다.**
 종료 코드(`${PIPESTATUS[0]}`)를 보거나 마지막 20줄을 그대로 본다. Turbopack 이 앞선 결과를
-재활용하므로, 못 미덥거든 `rm -rf .next` 하고 다시 돌린다. 이 컴퓨터에는 Playwright 가
-`/home/ubuntu/designlab/node_modules` 에 있고 브라우저는 `~/.cache/ms-playwright/chromium-1234/chrome-linux64/chrome`
-이다. 스크립트를 그 디렉터리에 두고 `executablePath` 를 넘겨 쓴다.
+재활용하므로, 못 미덥거든 `rm -rf .next` 하고 다시 돌린다.
+
+화면 확인에 쓸 Playwright 는 이 컴퓨터의 `/home/ubuntu/designlab/node_modules` 에 있고, 브라우저는
+`~/.cache/ms-playwright/chromium-1234/chrome-linux64/chrome` 이다. 스크립트를 그 디렉터리에 두고
+`executablePath` 를 넘겨 쓴다.
 
 주의: **chrome-headless-shell 은 `prefers-reduced-motion: reduce` 로 동작한다.** 인트로 연출을
 확인하려면 전체 chromium 을 쓰고 `reducedMotion: 'no-preference'` 를 준다.
