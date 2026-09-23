@@ -10,7 +10,13 @@ import type { Mp4Info } from './mp4';
 /** 목록에 쓰는 썸네일의 긴 변. 원본은 줄이지 않고 그대로 둔다. */
 const THUMB_EDGE = 480;
 
-export type SendExtra = { role?: 'original' | 'thumb' | 'stream'; derivedFrom?: string; media?: Mp4Info | null };
+export type SendExtra = {
+  role?: 'original' | 'thumb' | 'stream' | 'face';
+  derivedFrom?: string;
+  media?: Mp4Info | null;
+  /** 얼굴(role='face')일 때 누구의 것인지 — Drive 이름에 들어간다 */
+  faceOf?: string;
+};
 
 /** 세션 열기 → PUT → 표에 적기. 표에 적힌 file 행 id 를 돌려준다. */
 export async function sendToDrive(

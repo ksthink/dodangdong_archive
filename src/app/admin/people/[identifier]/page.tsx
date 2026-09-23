@@ -2,11 +2,12 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import {
-  updatePerson, deletePerson, addLifePeriod, removeLifePeriod, addRelation, removeRelation, setFace,
+  updatePerson, deletePerson, addLifePeriod, removeLifePeriod, addRelation, removeRelation,
 } from '@/lib/people-actions';
+import type { FaceCrop } from '@/lib/people-actions';
+import FacePicker, { type Candidate } from './face-picker';
 import PersonForm from '../person-form';
 import DeleteBox from '../../items/[identifier]/delete-box';
-import Face from '@/components/face';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,17 +26,29 @@ export default async function EditPersonPage({
   const { data: person } = await supabase.from('person').select('*').eq('identifier', identifier).maybeSingle();
   if (!person) notFound();
 
-  // 얼굴 후보: 이 사람이 나오거나 만든 자료의 사진 썸네일
+  // 얼굴 후보: 이 사람이 나오거나 만든 자료의 사진 원본(자르기는 원본에서 한다)
   const [{ data: appears }, { data: made }] = await Promise.all([
     supabase.from('item_person').select('item_id').eq('person_id', person.id),
     supabase.from('item').select('id').eq('creator_person_id', person.id),
   ]);
   const itemIds = [...new Set([...(appears ?? []).map((r) => r.item_id), ...(made ?? []).map((r) => r.id)])];
-  const { data: faces } = itemIds.length
+  const { data: photos } = itemIds.length
     ? await supabase.from('file')
-        .select('id, item_id, original_filename, item(identifier, title)')
-        .eq('role', 'thumb').in('item_id', itemIds).order('created_at')
+        .select('id, item_id, role, mime, derived_from, item(identifier, title)')
+        .in('item_id', itemIds).in('role', ['original', 'thumb']).order('created_at')
     : { data: [] };
+  // 원본마다 딸린 썸네일을 짝지어 둔다 — 고르는 줄에는 썸네일을 보여 주는 게 가볍다
+  const thumbOf = new Map<string, string>();
+  for (const f of photos ?? []) if (f.role === 'thumb' && f.derived_from) thumbOf.set(f.derived_from, f.id);
+  const candidates: Candidate[] = (photos ?? [])
+    .filter((f) => f.role === 'original' && f.mime?.startsWith('image/'))
+    .map((f) => {
+      const it = (Array.isArray(f.item) ? f.item[0] : f.item) as { identifier: string; title: string } | null;
+      return {
+        itemId: f.item_id, itemIdentifier: it?.identifier ?? '', itemTitle: it?.title ?? '',
+        originalId: f.id, thumbId: thumbOf.get(f.id) ?? null,
+      };
+    });
 
   const [{ data: periods }, { data: others }, { data: out }, { data: into }] = await Promise.all([
     supabase.from('life_period').select('*').eq('person_id', person.id).order('sort_order'),
@@ -53,7 +66,6 @@ export default async function EditPersonPage({
   const remove = deletePerson.bind(null, identifier);
   const addPeriod = addLifePeriod.bind(null, identifier, person.id);
   const addRel = addRelation.bind(null, identifier, person.id);
-  const setFaceHere = setFace.bind(null, identifier, person.id);
 
   return (
     <main className="page">
@@ -67,41 +79,17 @@ export default async function EditPersonPage({
       <section className="section">
         <h2 className="section-title">얼굴 사진</h2>
         <p className="help" style={{ marginBottom: 'var(--space-4)' }}>
-          사진을 따로 올리지 않는다. 이 사람이 <strong>나오거나 만든 자료</strong>의 사진 가운데 하나를 고른다 —
-          그래야 얼굴에도 출처가 남고, 그 자료를 지우면 얼굴도 저절로 떨어진다.
+          사진을 따로 올리지 않는다. 이 사람이 <strong>나오거나 만든 자료</strong>의 사진에서 얼굴 자리를 잘라 쓴다 —
+          그래야 얼굴에도 출처가 남고, 원본은 손대지 않으며, 그 자료를 지우면 얼굴도 저절로 떨어진다.
           목록에 없으면 먼저 그 자료의 등장인물에 이 사람을 넣는다.
         </p>
-        {faces?.length ? (
-          <form action={setFaceHere}>
-            <ul className="facepick">
-              <li>
-                <label className="facepick-one">
-                  <input type="radio" name="file_id" value="" defaultChecked={!person.face_file_id} />
-                  <span className="face"><span>{(person.short_name ?? person.display_name).slice(0, 1)}</span></span>
-                  <span className="meta-value">쓰지 않기</span>
-                </label>
-              </li>
-              {faces.map((f) => {
-                const it = (Array.isArray(f.item) ? f.item[0] : f.item) as { identifier: string; title: string } | null;
-                const on = person.face_file_id === f.id;
-                return (
-                  <li key={f.id}>
-                    <label className="facepick-one">
-                      <input type="radio" name="file_id" value={f.id} defaultChecked={on} />
-                      <Face fileId={f.id} name={person.short_name ?? person.display_name} />
-                      <span className="meta-value">{it?.identifier}</span>
-                    </label>
-                  </li>
-                );
-              })}
-            </ul>
-            <div style={{ marginTop: 'var(--space-4)' }}>
-              <button className="button" type="submit">얼굴 사진 저장</button>
-            </div>
-          </form>
-        ) : (
-          <p className="empty">이 사람과 이어진 자료에 사진이 없다.</p>
-        )}
+        <FacePicker
+          identifier={identifier}
+          personId={person.id}
+          candidates={candidates}
+          currentFileId={person.face_file_id ?? null}
+          currentCrop={(person.face_crop as FaceCrop | null) ?? null}
+        />
       </section>
 
       <section className="section">

@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { createClient, getAdmin } from '@/lib/supabase/server';
+import { deleteFile } from '@/lib/google/drive';
 import { edtfYear } from '@/lib/edtf';
 import { withQuery } from '@/lib/url';
 
@@ -128,22 +129,27 @@ export async function removeRelation(identifier: string, from: string, to: strin
   revalidatePath(`/admin/people/${identifier}`);
 }
 
+/** 얼굴을 잘라낸 자리 — 원본 가로·세로 대비 비율. 네모는 정사각형(픽셀로 size×가로). */
+export type FaceCrop = { x: number; y: number; size: number };
+
+const inUnit = (v: unknown) => typeof v === 'number' && Number.isFinite(v) && v >= 0 && v <= 1;
+
 /**
- * 얼굴 사진을 정한다 — 이 사람과 이어진 자료(나오거나 만든)의 썸네일 가운데 하나.
+ * 얼굴 사진을 정한다 — 이 사람과 이어진 자료(나오거나 만든)의 사진에서 잘라낸 것.
  *
- * 사진을 따로 올리지 않고 아카이브에 이미 있는 것을 가리킨다. 그래야 얼굴에도
+ * 사진을 따로 올리지 않고 아카이브에 이미 있는 것에서 잘라 쓴다. 그래야 얼굴에도
  * 출처가 남고, 자료를 지우면 얼굴도 저절로 떨어진다(face_file_id 는 on delete set null).
+ * 잘라낸 파일은 브라우저가 먼저 올려 두고(role='face'), 여기서는 그것을 가리키기만 한다.
+ *
+ * 바꿔 달 때 쓰던 얼굴 파일은 지운다 — 아무도 가리키지 않는 파일이 Drive 에 쌓이지 않게.
  */
-export async function setFace(identifier: string, personId: string, form: FormData) {
+export async function saveFace(identifier: string, personId: string, fileId: string | null, crop: FaceCrop | null) {
   await requireAdmin();
   const supabase = await createClient();
-  const fileId = text(form, 'file_id');
 
   if (fileId) {
-    const { data: file } = await supabase.from('file').select('id, item_id, mime').eq('id', fileId).maybeSingle();
-    if (!file || !file.mime?.startsWith('image/')) {
-      redirect(withQuery(`/admin/people/${identifier}`, { error: '사진이 아니다.' }));
-    }
+    const { data: file } = await supabase.from('file').select('id, item_id, mime, role').eq('id', fileId).maybeSingle();
+    if (!file || !file.mime?.startsWith('image/')) throw new Error('사진이 아니다.');
     // 이 사람과 이어진 자료의 사진만 받는다 — 아무 파일이나 얼굴로 붙지 않게.
     const [{ count: appears }, { count: made }] = await Promise.all([
       supabase.from('item_person').select('*', { count: 'exact', head: true })
@@ -151,20 +157,32 @@ export async function setFace(identifier: string, personId: string, form: FormDa
       supabase.from('item').select('*', { count: 'exact', head: true })
         .eq('id', file.item_id).eq('creator_person_id', personId),
     ]);
-    if (!appears && !made) {
-      redirect(withQuery(`/admin/people/${identifier}`, { error: '이 사람과 이어진 자료의 사진이 아니다.' }));
-    }
+    if (!appears && !made) throw new Error('이 사람과 이어진 자료의 사진이 아니다.');
   }
+  if (crop && !(inUnit(crop.x) && inUnit(crop.y) && inUnit(crop.size) && crop.size > 0)) {
+    throw new Error('자른 자리가 올바르지 않다.');
+  }
+
+  // 쓰던 얼굴 파일(잘라낸 것)은 새것으로 바꾸고 나서 지운다
+  const { data: before } = await supabase
+    .from('person').select('face_file_id, file:face_file_id(id, role, storage_path, provider)')
+    .eq('identifier', identifier).maybeSingle();
 
   const { error } = await supabase
     .from('person')
-    .update({ face_file_id: fileId, modified_at: new Date().toISOString() })
+    .update({ face_file_id: fileId, face_crop: fileId ? crop : null, modified_at: new Date().toISOString() })
     .eq('identifier', identifier);
   if (error) throw new Error(`얼굴 사진을 저장하지 못했다: ${error.message}`);
+
+  const old = (Array.isArray(before?.file) ? before.file[0] : before?.file) as
+    { id: string; role: string; storage_path: string; provider: string } | null | undefined;
+  if (old && old.id !== fileId && old.role === 'face') {
+    await supabase.from('file').delete().eq('id', old.id);
+    if (old.provider === 'gdrive') await deleteFile(old.storage_path).catch(() => {});
+  }
 
   revalidatePath(`/admin/people/${identifier}`);
   revalidatePath(`/people/${identifier}`);
   revalidatePath('/people');
   revalidatePath('/');
-  redirect(withQuery(`/admin/people/${identifier}`, { saved: 'face' }));
 }

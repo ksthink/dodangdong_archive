@@ -135,7 +135,13 @@ for (const b of await json(await rest('bundle?select=identifier,drive_folder_id&
 
 for (const f of files) {
   const next = planned.get(f.id);
-  if (!next) { console.log(`  건너뜀(자료나 원본을 찾지 못함) ${f.id}`); continue; }
+  if (!next) {
+    // 재생용(stream)·얼굴(face)은 이 스크립트가 다루지 않는다 — 원본 이름이 바뀔 일이 거의 없고,
+    // 얼굴 이름에는 사람 식별자가 들어가 여기서 다시 짓기 번거롭다.
+    const why = f.role === 'original' || f.role === 'thumb' ? '자료나 원본을 찾지 못함' : `${f.role} 은 다루지 않음`;
+    console.log(`  건너뜀(${why}) ${f.id}`);
+    continue;
+  }
   await rename(f.storage_path, next, f.role === 'thumb' ? '썸네일' : '원본  ');
 }
 

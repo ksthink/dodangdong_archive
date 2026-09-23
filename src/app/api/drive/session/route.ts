@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createClient, getAdmin } from '@/lib/supabase/server';
 import { bundleFolder, fileMeta, nameTaken, uploadSession } from '@/lib/google/drive';
-import { extOf, originalName, streamName, thumbName } from '@/lib/google/naming';
+import { extOf, faceName, originalName, streamName, thumbName } from '@/lib/google/naming';
 
 export const dynamic = 'force-dynamic';
 
@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic';
 export async function POST(request: NextRequest) {
   if (!(await getAdmin())) return NextResponse.json({ error: '관리자만 올릴 수 있다.' }, { status: 403 });
 
-  const { itemId, name, mimeType, size, role, derivedFrom } = await request.json();
+  const { itemId, name, mimeType, size, role, derivedFrom, faceOf } = await request.json();
   if (!itemId || !name || !size) {
     return NextResponse.json({ error: '자료·파일 이름·크기가 있어야 한다.' }, { status: 400 });
   }
@@ -24,16 +24,31 @@ export async function POST(request: NextRequest) {
 
     // Drive 이름은 규칙대로(src/lib/google/naming.ts). 올린 원래 이름은 register 가 표에 남긴다.
     let driveName: string;
-    if (role === 'thumb' || role === 'stream') {
-      // 썸네일·재생용은 그 원본의 Drive 이름을 따른다 — 원본이 이 자료의 것인지 확인한다
+    if (role === 'thumb' || role === 'stream' || role === 'face') {
+      // 파생 파일은 그 원본의 Drive 이름을 따른다 — 원본이 이 자료의 것인지 확인한다
       const { data: source } = await supabase
         .from('file').select('storage_path, mime').eq('id', derivedFrom ?? '').eq('item_id', itemId).eq('role', 'original').maybeSingle();
       if (!source) return NextResponse.json({ error: '파생 파일의 원본이 이 자료의 원본이 아니다.' }, { status: 400 });
       if (role === 'stream' && !source.mime?.startsWith('video/')) {
         return NextResponse.json({ error: '재생용은 영상 원본에만 붙인다.' }, { status: 400 });
       }
+      if (role === 'face' && !source.mime?.startsWith('image/')) {
+        return NextResponse.json({ error: '얼굴은 사진 원본에서만 잘라 낸다.' }, { status: 400 });
+      }
+      if (role === 'face' && !/^DP-\d+$/.test(String(faceOf ?? ''))) {
+        return NextResponse.json({ error: '얼굴은 누구의 것인지 함께 보내야 한다.' }, { status: 400 });
+      }
       const sourceName = (await fileMeta(source.storage_path)).name;
-      driveName = role === 'thumb' ? thumbName(sourceName) : streamName(sourceName);
+      if (role === 'thumb') driveName = thumbName(sourceName);
+      else if (role === 'stream') driveName = streamName(sourceName);
+      else {
+        // 같은 사람을 다시 자르면 옛 파일이 아직 있다 — 겹치면 -2, -3
+        let n = 1;
+        while (await nameTaken(folderId, faceName(sourceName, String(faceOf), n))) {
+          if (++n > 20) throw new Error('같은 이름이 너무 많다.');
+        }
+        driveName = faceName(sourceName, String(faceOf), n);
+      }
     } else {
       const at = new Date();
       const ext = extOf(String(name));

@@ -19,14 +19,14 @@ export async function POST(request: NextRequest) {
   if (!itemId || !driveFileId) {
     return NextResponse.json({ error: '자료와 파일 id 가 있어야 한다.' }, { status: 400 });
   }
-  if (role !== 'original' && role !== 'thumb' && role !== 'stream') {
+  if (role !== 'original' && role !== 'thumb' && role !== 'stream' && role !== 'face') {
     return NextResponse.json({ error: `알 수 없는 역할: ${role}` }, { status: 400 });
   }
 
   const supabase = await createClient();
 
   // 썸네일·재생용은 같은 자료의 원본에서 만든 것이어야 한다.
-  if (role === 'thumb' || role === 'stream') {
+  if (role === 'thumb' || role === 'stream' || role === 'face') {
     const { data: source } = derivedFrom
       ? await supabase.from('file').select('item_id, role').eq('id', derivedFrom).maybeSingle()
       : { data: null };

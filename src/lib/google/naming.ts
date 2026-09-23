@@ -5,6 +5,8 @@
  *   DA-0017_20260922190012-2.jpg       같은 이름이 이미 있으면 -2, -3 …
  *   DA-0017_20260922190012_thumb.jpg   썸네일 — 원본 이름 + _thumb
  *   DA-0053_20260922195142_stream.mp4  재생용 사본(영상) — 원본 이름 + _stream
+ *   DA-0007_20260922190012_face_DP-002.jpg  얼굴 — 원본 이름 + _face_인물식별자
+ *                                           (한 사진에서 여럿을 잘라내므로 사람을 붙인다)
  *
  * 이름에는 한글·공백이 들어가지 않는다 — 영문 식별자, 숫자, 영문 확장자만(ASCII).
  * 날짜는 올린 시각이지 자료가 만들어진 날(dc:date)이 아니다.
@@ -59,4 +61,14 @@ export function thumbName(originalDriveName: string): string {
 /** 재생용 사본 이름 — 원본의 Drive 이름에서 확장자를 떼고 _stream.mp4 */
 export function streamName(originalDriveName: string): string {
   return ascii(`${originalDriveName.replace(/\.[^.]+$/, '')}_stream.mp4`);
+}
+
+/**
+ * 얼굴 이름 — 원본 이름 + _face_인물식별자.
+ * 한 사진(혼례식 따위)에서 여러 사람의 얼굴을 잘라내므로 사람까지 붙여야 겹치지 않는다.
+ * 같은 사람을 다시 자르면 옛 파일이 아직 있을 수 있어 -2, -3 을 붙인다.
+ */
+export function faceName(originalDriveName: string, person: string, n = 1): string {
+  const base = `${originalDriveName.replace(/\.[^.]+$/, '')}_face_${person}`;
+  return ascii(`${n > 1 ? `${base}-${n}` : base}.jpg`);
 }

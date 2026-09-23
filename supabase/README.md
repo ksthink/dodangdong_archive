@@ -18,6 +18,7 @@
 | `0012_one_stream_per_original.sql` | 원본 하나에 재생용(stream) 하나 |
 | `0013_tags_retired.sql` | 자유어 태그(`item.tags`)를 접는다 — 주제는 주제분류로만. 적힌 값은 남긴다 |
 | `0014_close_guest_read.sql` | 손님(anon) 읽기를 걷어낸다 — guest_read 정책·표 권한·기본 권한 전부. 사이트가 잠겼으니 DB 도 잠근다 |
+| `0015_person_face_crop.sql` | 얼굴을 사진에서 잘라 쓴다 — `file_role` 에 `face`, `person.face_crop`(잘라낸 자리) |
 
 ## 권한 규칙
 

@@ -80,8 +80,8 @@ publishable 키만으로는 REST 가 401 이다. 코드와 주석에 남아 있�
 ```
 
 - Drive 이름 규칙은 `src/lib/google/naming.ts` 하나에 모여 있고 **ASCII 만 받는다**(한글이 들어오면 던진다).
-- `file.role` 은 셋이다: `original`(보존) · `thumb`(목록용 480px) · `stream`(재생 규격 영상 사본).
-  파생 파일은 `derived_from` 으로 원본을 가리킨다. 영상은 규격(MP4·H.264·AAC·moov 앞) 밖이면
+- `file.role` 은 넷이다: `original`(보존) · `thumb`(목록용 480px) · `stream`(재생 규격 영상 사본) ·
+  `face`(인물 얼굴, 사진 원본에서 잘라낸 256px). 파생 파일은 `derived_from` 으로 원본을 가리킨다. 영상은 규격(MP4·H.264·AAC·moov 앞) 밖이면
   원본을 그대로 두고 `stream` 을 따로 붙인다 — 서버에서 변환하지 않는다.
 - 내려갈 때는 **늘 `/api/media/[fileId]`** 를 거친다. 이 프록시가 공개 범위를 한 번 더 확인하고
   Range 요청을 넘긴다. Drive 주소를 화면에 직접 내지 않는다.
