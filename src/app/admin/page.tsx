@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
+import StoragePies, { SHADES, type Slice } from '@/components/storage-pies';
 
 export const dynamic = 'force-dynamic';
 
@@ -46,16 +47,10 @@ function sharePercent(part: number, whole: number): string {
   return `${Math.round(percent)}%`;
 }
 
-/**
- * 조각을 가르는 회색 단계. 흑백이라 색으로 나눌 수 없어 네 단계와 들어간 면뿐이다.
- * 그래서 유형은 **큰 것 넷과 "그 밖"** 으로 묶는다 — 더 잘게 나누면 회색이 모자라 구별이 안 된다.
- */
-const SHADES = ['var(--ink)', 'var(--ink-muted)', 'var(--rule-strong)', 'var(--rule)', 'var(--paper-sunken)'];
-
-type Slice = { label: string; note: string; bytes: number };
+type Sized = { label: string; note: string; bytes: number };
 
 /** 큰 것부터 줄 세우고, 회색이 모자라면 나머지를 "그 밖" 한 조각으로 묶는다. */
-function toSlices(all: Slice[]): Slice[] {
+function toSlices(all: Sized[]): Sized[] {
   const sorted = [...all].sort((a, b) => b.bytes - a.bytes);
   if (sorted.length <= SHADES.length) return sorted;
   const rest = sorted.slice(SHADES.length - 1);
@@ -66,57 +61,13 @@ function toSlices(all: Slice[]): Slice[] {
   }];
 }
 
-/** 원 위의 한 자리. 12시에서 시계 방향으로 잰다(turn 은 한 바퀴가 1). */
-function point(c: number, r: number, turn: number) {
-  const a = 2 * Math.PI * turn;
-  return `${(c + r * Math.sin(a)).toFixed(2)} ${(c - r * Math.cos(a)).toFixed(2)}`;
-}
-
-/** 부채꼴 하나. 한 바퀴를 다 돌면 호가 시작점으로 돌아와 아무것도 안 그려지므로 그때는 원을 채운다. */
-function Wedge({ c, r, from, share, fill, seam }: {
-  c: number; r: number; from: number; share: number; fill: string; seam?: boolean;
-}) {
-  if (share <= 0) return null;
-  if (share >= 0.999) return <circle cx={c} cy={c} r={r} fill={fill} />;
-  return (
-    <path fill={fill} stroke={seam ? 'var(--paper)' : 'none'} strokeWidth={seam ? 1 : 0}
-      d={`M ${c} ${c} L ${point(c, r, from)} A ${r} ${r} 0 ${share > 0.5 ? 1 : 0} 1 ${point(c, r, from + share)} Z`} />
-  );
-}
-
-/** 얼마나 찼는지 — 조각 하나. 0 이 아니면 아주 작아도 한 조각은 남긴다. */
-function UsePie({ ratio, size }: { ratio: number; size: number }) {
-  const r = size / 2 - 1;
-  const c = size / 2;
-  const share = Math.max(0, Math.min(1, ratio));
-  return (
-    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} aria-hidden>
-      <circle cx={c} cy={c} r={r} fill="var(--paper-sunken)" stroke="var(--ink)" strokeWidth="2" />
-      <Wedge c={c} r={r} from={0} share={share > 0 ? Math.max(share, 0.015) : 0} fill="var(--ink)" />
-    </svg>
-  );
-}
-
-/** 유형이 모두 든 원. 조각마다 회색 단계가 다르고, 사이는 종이색 실선으로 끊는다. */
-function TypePie({ slices, size }: { slices: Slice[]; size: number }) {
-  const r = size / 2 - 1;
-  const c = size / 2;
-  const total = slices.reduce((sum, x) => sum + x.bytes, 0);
-  let turn = 0;
-
-  return (
-    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} aria-hidden>
-      <circle cx={c} cy={c} r={r} fill="var(--paper-sunken)" stroke="var(--ink)" strokeWidth="2" />
-      {total > 0 && slices.map((slice, i) => {
-        const from = turn;
-        const share = slice.bytes / total;
-        turn += share;
-        return <Wedge key={slice.label} c={c} r={r} from={from} share={share} fill={SHADES[i]} seam />;
-      })}
-      {/* 조각을 다 그린 뒤 테를 다시 두른다 — 조각이 테를 덮기 때문이다 */}
-      <circle cx={c} cy={c} r={r} fill="none" stroke="var(--ink)" strokeWidth="2" />
-    </svg>
-  );
+/** 조각에 올렸을 때 뜨는 글 — 유형 · 갯수 · 용량 */
+function toPieSlices(rows: Sized[], whole: number): Slice[] {
+  return rows.map((row) => ({
+    label: row.label,
+    bytes: row.bytes,
+    tip: `${row.label} · ${row.note} · ${readableBytes(row.bytes)} · ${sharePercent(row.bytes, whole)}`,
+  }));
 }
 
 export default async function AdminPage() {
@@ -192,8 +143,12 @@ export default async function AdminPage() {
               <div className="storage-use">
                 <p className="display">{dbBytes === null ? '—' : sharePercent(dbBytes, DB_LIMIT)}</p>
                 {/* 왼쪽 원은 얼마나 찼는지, 오른쪽 원에는 표가 모두 들어 있다 — 아래 목록이 그 범례다 */}
-                <UsePie ratio={dbBytes === null ? 0 : dbBytes / DB_LIMIT} size={72} />
-                <TypePie slices={tableSlices} size={72} />
+                <StoragePies
+                  ratio={dbBytes === null ? 0 : dbBytes / DB_LIMIT}
+                  useTip={dbBytes === null
+                    ? '쓴 양을 읽지 못했다'
+                    : `${readableBytes(dbBytes)} / ${readableBytes(DB_LIMIT)} · ${readableBytes(DB_LIMIT - dbBytes)} 남음`}
+                  slices={toPieSlices(tableSlices, tableTotal)} />
               </div>
               <p className="meta-value">
                 {dbBytes === null
@@ -221,8 +176,10 @@ export default async function AdminPage() {
               <span className="meta-label">Google Drive</span>
               <div className="storage-use">
                 <p className="display">{sharePercent(driveBytes, DRIVE_LIMIT)}</p>
-                <UsePie ratio={driveBytes / DRIVE_LIMIT} size={72} />
-                <TypePie slices={fileSlices} size={72} />
+                <StoragePies
+                  ratio={driveBytes / DRIVE_LIMIT}
+                  useTip={`${readableBytes(driveBytes)} / ${readableBytes(DRIVE_LIMIT)} · ${readableBytes(DRIVE_LIMIT - driveBytes)} 남음`}
+                  slices={toPieSlices(fileSlices, driveBytes)} />
               </div>
               <p className="meta-value">
                 {readableBytes(driveBytes)} / {readableBytes(DRIVE_LIMIT)}
