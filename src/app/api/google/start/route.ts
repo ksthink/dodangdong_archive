@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic';
 /** 관리자만 연결을 시작할 수 있다. */
 export async function GET(request: NextRequest) {
   const admin = await getAdmin();
-  if (!admin) return NextResponse.redirect(new URL('/login?next=/admin/drive', request.url));
+  if (!admin) return NextResponse.redirect(new URL('/intro?next=/admin/drive', request.url));
 
   const origin = request.nextUrl.origin;
   const state = randomBytes(16).toString('hex');

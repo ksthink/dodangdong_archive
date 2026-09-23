@@ -1,0 +1,162 @@
+/*
+ * 인트로 — 낡은 단말기 화면을 흉내 낸 문지기.
+ *
+ * 만듦새는 CodePen 의 "Fallout Terminal Inspired CSS Theme" 에서 가져왔다
+ * (주사선·깜빡임·훑는 줄·대괄호 링크). 색은 녹색 형광체 대신 이 사이트의
+ * 종이색·먹색을 쓰고, 글꼴은 Neo둥근모(SIL OFL 1.1)를 쓴다.
+ */
+
+@font-face {
+  font-family: "NeoDunggeunmo";
+  src: url("/fonts/neodgm.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+.intro {
+  /* 비트맵 글꼴이라 16px 의 정수배에서만 선명하다 */
+  --dgm: "NeoDunggeunmo", "Galmuri11", monospace;
+  --intro-ink: var(--ink);
+  --intro-paper: var(--paper);
+
+  background: var(--intro-paper);
+  color: var(--intro-ink);
+  font-family: var(--dgm);
+  font-size: 16px;
+  line-height: 32px;
+  min-height: 100dvh;
+  overflow: hidden;
+  padding: 32px 16px 64px;
+  position: relative;
+}
+
+/* 화면이 위에서 아래로 그려져 내려온다 — 첫 방문에만.
+   높이 대신 clip-path 로 자른다: 부모에 높이가 정해져 있지 않아도 어김없이 돈다. */
+@keyframes intro-scroll {
+  from { clip-path: inset(0 0 100% 0) }
+  to   { clip-path: inset(0 0 0 0) }
+}
+@keyframes intro-blink { to { opacity: 0 } }
+@keyframes intro-flicker {
+  0%   { opacity: 0.015 }
+  20%  { opacity: 0.045 }
+  40%  { opacity: 0.010 }
+  60%  { opacity: 0.050 }
+  80%  { opacity: 0.020 }
+  100% { opacity: 0.035 }
+}
+@keyframes intro-scan { from { top: -5% } to { top: 100% } }
+@keyframes intro-line { from { opacity: 0; transform: translateY(-4px) } to { opacity: 1; transform: none } }
+
+/* globals.css 의 `* { animation: none !important }` 를 여기서만 뒤집는다.
+   사이트의 다른 곳은 여전히 움직이지 않는다. */
+.intro.is-booting .intro-body { animation: intro-scroll 1.2s steps(24, end) 1 !important }
+.intro.is-booting .intro-line {
+  animation: intro-line 0.18s steps(2, end) both !important;
+  animation-delay: calc(var(--i) * 0.13s) !important;
+}
+
+/* 주사선과 형광체 떨림 — 손가락을 받지 않는 겹이다 */
+.intro-overlay::before,
+.intro-overlay::after {
+  content: "";
+  display: block;
+  inset: 0;
+  pointer-events: none;
+  position: fixed;
+  z-index: 2;
+}
+.intro-overlay::before {
+  background:
+    linear-gradient(rgba(0, 0, 0, 0.05) 50%, transparent 50%),
+    linear-gradient(90deg, rgba(255, 0, 0, 0.02), rgba(0, 255, 0, 0.015), rgba(0, 0, 255, 0.02));
+  background-size: 100% 3px, 6px 100%;
+}
+.intro-overlay::after {
+  animation: intro-flicker 0.3s steps(1, end) infinite !important;
+  background: var(--intro-ink);
+  opacity: 0.02;
+}
+.intro-scan {
+  animation: intro-scan 8s linear 2s infinite !important;
+  background: linear-gradient(to bottom, transparent, rgba(0, 0, 0, 0.35), transparent);
+  display: block;
+  height: 24px;
+  left: 0;
+  opacity: 0.08;
+  pointer-events: none;
+  position: absolute;
+  right: 0;
+  top: -5%;
+  z-index: 2;
+}
+
+.intro-body {
+  margin: 0 auto;
+  max-width: 880px;
+  overflow: hidden;
+  position: relative;
+  z-index: 1;
+}
+
+.intro-head { display: flex; gap: 32px; align-items: flex-start; margin-bottom: 32px; }
+/* 좁은 화면에서 머리글이 잘리지 않게 — 줄을 바꾼다 */
+.intro-head > div { min-width: 0; overflow-wrap: anywhere; }
+.intro-logo { display: block; height: auto; width: 128px; }
+.intro-head p, .intro-head h1 { font: inherit; margin: 0; }
+
+.intro-line { display: block }
+.intro-rule { white-space: nowrap; overflow: hidden }
+
+.intro-nav { display: flex; flex-wrap: wrap; gap: 0 32px; margin-bottom: 32px; }
+
+/* 한글은 낱말 단위로 끊는다 — "개/인 공간" 처럼 쪼개지지 않게 */
+.intro-msg { margin: 0 0 32px; max-width: 64ch; word-break: keep-all; }
+
+/* 대괄호로 감싼 단말기 단추 */
+.intro-key {
+  background: none;
+  border: 0;
+  color: var(--intro-ink);
+  cursor: pointer;
+  font: inherit;
+  padding: 0;
+}
+.intro-key::before { content: "[ " }
+.intro-key::after { content: " ]" }
+.intro-key:hover, .intro-key:focus-visible { background: var(--intro-ink); color: var(--intro-paper); outline: 0 }
+.intro-key[disabled] { cursor: default; opacity: 0.4 }
+
+/* 깜빡이는 네모 커서 */
+.intro-caret { animation: intro-blink 1s steps(1, end) infinite !important }
+
+/* 로그인 — 테두리 없이 글자만, 밑줄로 칸을 표시한다 */
+.intro-form { display: grid; gap: 0 16px; grid-template-columns: auto 1fr; max-width: 560px; align-items: baseline; }
+.intro-form label { white-space: nowrap }
+.intro-form input {
+  background: none;
+  border: 0;
+  border-bottom: 2px solid var(--intro-ink);
+  color: var(--intro-ink);
+  font: inherit;
+  min-width: 0;
+  padding: 0 4px;
+}
+.intro-form input:focus { outline: 0; background: rgba(0, 0, 0, 0.06) }
+.intro-keys { display: flex; gap: 32px; grid-column: 1 / -1; margin-top: 32px; }
+.intro-error { grid-column: 1 / -1; margin: 0 0 16px }
+.intro-error::before { content: "!! " }
+
+@media (max-width: 560px) {
+  .intro-head { gap: 16px }
+  .intro-logo { width: 96px }
+  .intro-form { grid-template-columns: 1fr }
+}
+
+/* 움직임을 줄여 달라고 한 사람에게는 정지 화면으로 */
+@media (prefers-reduced-motion: reduce) {
+  .intro-overlay::after, .intro-scan, .intro-caret,
+  .intro.is-booting .intro-body, .intro.is-booting .intro-line { animation: none !important }
+  .intro-scan { display: none }
+}

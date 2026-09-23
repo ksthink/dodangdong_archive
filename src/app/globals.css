@@ -24,7 +24,8 @@ body {
   font: var(--text-body);
 }
 
-/* 움직임은 없다. 상태는 전환 없이 한 번에 바뀐다 (픽셀 화면처럼). */
+/* 움직임은 없다. 상태는 전환 없이 한 번에 바뀐다 (픽셀 화면처럼).
+   딱 한 군데, 인트로(/intro)의 단말기 연출만 예외다 — 거기서는 !important 로 되살린다. */
 * { transition: none !important; animation: none !important; }
 
 h1, h2, h3, p, figure, blockquote, dl, dd { margin: 0; }

@@ -13,7 +13,7 @@ const back = (request: NextRequest, message?: string) => {
 
 export async function GET(request: NextRequest) {
   const admin = await getAdmin();
-  if (!admin) return NextResponse.redirect(new URL('/login?next=/admin/drive', request.url));
+  if (!admin) return NextResponse.redirect(new URL('/intro?next=/admin/drive', request.url));
 
   const params = request.nextUrl.searchParams;
   if (params.get('error')) return back(request, `구글이 연결을 거절했다: ${params.get('error')}`);

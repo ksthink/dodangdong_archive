@@ -1,6 +1,6 @@
 import Link from 'next/link';
 
-/** 공개 화면 머리. 로그인 링크는 여기 두지 않는다 — 맨 아래 "관리" 하나로만 간다. */
+/** 화면 머리. 들어온 사람만 보는 곳이다 — 문은 인트로(/intro) 하나뿐이다. */
 export default function SiteHeader() {
   return (
     <header className="site-head">
