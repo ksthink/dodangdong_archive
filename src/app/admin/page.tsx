@@ -10,6 +10,17 @@ export const dynamic = 'force-dynamic';
 const DB_LIMIT = 300 * 1e6;      // Supabase 300MB
 const DRIVE_LIMIT = 300 * 1e9;   // Google Drive 300GB
 
+/** 갈래 이름. mime 앞머리로 가른다 — 형식 이름(MP4·WAV)은 그 뒤에서 딴다. */
+const KIND_LABEL: Record<string, string> = {
+  image: '사진', audio: '소리', video: '영상', application: '문서', text: '글',
+};
+
+/** image/jpeg → JPEG, audio/x-m4a → M4A. 형식 이름을 짧게 딴다. */
+function formatName(mime: string): string {
+  const sub = (mime.split('/')[1] ?? mime).replace(/^x-/, '').split(';')[0];
+  return sub.toUpperCase();
+}
+
 /** 1.4GB, 12.4MB 처럼 한 자리까지. 1000 으로 나눈다(디스크가 파는 단위와 같게). */
 function readableBytes(n: number): string {
   if (n >= 1e9) return `${Math.round(n / 1e8) / 10}GB`;
@@ -32,11 +43,22 @@ export default async function AdminPage() {
   // 저장소 — DB 크기는 함수로 묻고(0016), Drive 는 우리가 올린 파일의 합이다(파일이 적어 그대로 더한다).
   const [{ data: dbSize, error: dbError }, { data: files }] = await Promise.all([
     supabase.rpc('db_size'),
-    supabase.from('file').select('bytes'),
+    supabase.from('file').select('mime, bytes'),
   ]);
   // 못 읽었으면 0 으로 눙치지 않는다 — 0% 는 "비어 있다" 로 읽혀 거짓말이 된다.
   const dbBytes = dbError || dbSize === null ? null : Number(dbSize);
   const driveBytes = (files ?? []).reduce((sum, f) => sum + Number(f.bytes ?? 0), 0);
+
+  // 형식마다 몇 개에 몇 바이트인지. 큰 것부터 본다 — 자리를 차지하는 것이 무엇인지가 먼저다.
+  const byFormat = new Map<string, { count: number; bytes: number }>();
+  for (const f of files ?? []) {
+    const mime = (f.mime ?? '').toLowerCase() || 'application/octet-stream';
+    const seen = byFormat.get(mime) ?? { count: 0, bytes: 0 };
+    byFormat.set(mime, { count: seen.count + 1, bytes: seen.bytes + Number(f.bytes ?? 0) });
+  }
+  const formats = [...byFormat.entries()].sort((a, b) => b[1].bytes - a[1].bytes);
+  // 막대는 가장 큰 형식을 가득 찬 것으로 잡는다. 전체 용량에 견주면 죄다 한 점이라 보이지 않는다.
+  const widest = formats[0]?.[1].bytes ?? 0;
 
   return (
     <main className="page">
@@ -63,30 +85,53 @@ export default async function AdminPage() {
 
         <section className="section">
           <h2 className="section-title">저장소</h2>
-          <ul className="grid">
+          <ul className="storage-grid">
             {([
               ['Supabase', dbBytes, DB_LIMIT, '기술(더블린코어)이 사는 곳'],
-              ['Google Drive', driveBytes, DRIVE_LIMIT, `원본 파일 ${files?.length ?? 0}개`],
-            ] as [string, number | null, number, string][]).map(([label, used, limit, note]) => (
-              <li key={label} className="card">
-                <span className="meta-label">{label}</span>
-                <p className="display" style={{ marginTop: 'var(--space-2)' }}>
-                  {used === null ? '—' : `${Math.min(100, Math.round((used / limit) * 100))}%`}
-                </p>
-                <p className="meta-value">
-                  {used === null
-                    ? `쓴 양을 읽지 못했다 · 전체 ${readableBytes(limit)}`
-                    : `${readableBytes(used)} / ${readableBytes(limit)} · ${readableBytes(limit - used)} 남음`}
-                </p>
-                <p className="meta-value">{note}</p>
-              </li>
-            ))}
+              ['Google Drive', driveBytes, DRIVE_LIMIT, `원본과 파생 ${files?.length ?? 0}개`],
+            ] as [string, number | null, number, string][]).map(([label, used, limit, note]) => {
+              const percent = used === null ? 0 : Math.min(100, (used / limit) * 100);
+              return (
+                <li key={label} className="card">
+                  <span className="meta-label">{label}</span>
+                  <p className="display" style={{ marginTop: 'var(--space-2)' }}>
+                    {used === null ? '—' : `${Math.round(percent)}%`}
+                  </p>
+                  {/* 막대는 1% 아래여도 한 칸은 보인다 — 비어 있는 것과 조금 든 것은 다르다 */}
+                  <div className="meter" aria-hidden>
+                    <div className="meter-fill" style={{ width: used === null ? 0 : `${Math.max(percent, percent > 0 ? 1.5 : 0)}%` }} />
+                  </div>
+                  <p className="meta-value">
+                    {used === null
+                      ? `쓴 양을 읽지 못했다 · 전체 ${readableBytes(limit)}`
+                      : `${readableBytes(used)} / ${readableBytes(limit)} · ${readableBytes(limit - used)} 남음`}
+                  </p>
+                  <p className="meta-value">{note}</p>
+                </li>
+              );
+            })}
           </ul>
-          <p className="help" style={{ marginTop: 'var(--space-4)' }}>
-            전체 용량은 손으로 적어 둔 값이다. Drive 쪽은 이 아카이브가 올린 파일만 센다 —
-            구글 계정이 달리 쓰고 있는 양은 들어 있지 않다.
-          </p>
+
+          <h3 className="label" style={{ marginTop: 'var(--space-8)' }}>형식마다</h3>
+          {formats.length === 0 ? (
+            <p className="empty">아직 올린 파일이 없다.</p>
+          ) : (
+            <ul className="storage-formats">
+              {formats.map(([mime, { count, bytes }]) => (
+                <li key={mime}>
+                  <span className="meta-label">{KIND_LABEL[mime.split('/')[0]] ?? '그 밖'}</span>
+                  <span className="storage-format">{formatName(mime)}</span>
+                  <span className="meta-value">{count}개</span>
+                  <div className="meter" aria-hidden>
+                    <div className="meter-fill" style={{ width: widest ? `${Math.max((bytes / widest) * 100, 1.5)}%` : 0 }} />
+                  </div>
+                  <span className="meta-value storage-bytes">{readableBytes(bytes)}</span>
+                </li>
+              ))}
+            </ul>
+          )}
         </section>
+
     </main>
   );
 }

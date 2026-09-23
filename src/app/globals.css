@@ -189,6 +189,30 @@ a:hover { text-decoration: underline; text-decoration-thickness: var(--stroke); 
 .adminbar-nav { display: flex; align-items: center; gap: var(--space-4); margin-left: auto; }
 .adminbar-out { background: none; border: var(--stroke) solid var(--on-ink); color: var(--on-ink); font: var(--text-body-sm); padding: 0 var(--space-2); cursor: pointer; }
 
+/* 저장소 — 얼마나 찼는지. 막대는 테 두른 빈 칸에 먹색을 채운 픽셀 눈금이다 */
+.storage-grid { display: grid; gap: var(--space-6); grid-template-columns: 1fr; }
+@media (min-width: 620px) { .storage-grid { grid-template-columns: repeat(2, 1fr); } }
+.meter {
+  height: 12px; margin: var(--space-3) 0;
+  border: var(--stroke) solid var(--ink); background: var(--paper-sunken);
+}
+.meter-fill { height: 100%; background: var(--ink); }
+
+/* 형식마다 — 갈래 · 형식 · 개수 · 막대 · 용량 */
+.storage-formats { display: grid; gap: var(--space-2); margin-top: var(--space-3); }
+.storage-formats li {
+  display: grid; align-items: center; gap: var(--space-3);
+  grid-template-columns: 48px 72px 48px 1fr 72px;
+  border-bottom: var(--stroke) solid var(--rule); padding-bottom: var(--space-2);
+}
+.storage-format { font: var(--text-meta-value); color: var(--ink); }
+.storage-bytes { text-align: right; }
+.storage-formats .meter { margin: 0; }
+@media (max-width: 559px) {
+  .storage-formats li { grid-template-columns: 48px 1fr 64px; }
+  .storage-formats .meter { grid-column: 1 / -1; }
+}
+
 /* 등록·수정 양식 — 2열, 설명과 주제분류만 두 칸 폭 */
 .form { display: grid; grid-template-columns: 1fr; gap: var(--space-6); margin-top: var(--space-8); }
 @media (min-width: 760px) { .form { grid-template-columns: 1fr 1fr; } .form-field.span2 { grid-column: span 2; } }
