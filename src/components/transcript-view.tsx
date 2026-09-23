@@ -68,25 +68,23 @@ export default function TranscriptView({
     <>
       <h2 className="section-title transcript-head">
         <span className="transcript-head-left">
+          <span>녹취록</span>
           <button type="button" className="transcript-toggle" aria-expanded={shown} aria-controls={listId}
             onClick={() => setOpen(!shown)}>
             <span aria-hidden>{shown ? '▲' : '▼'}</span>
             <span className="sr-only">{shown ? '녹취록 접기' : '녹취록 펼치기'}</span>
           </button>
-          <span>녹취록</span>
-          <input type="search" className="field transcript-search" value={query} placeholder="녹취록에서 찾기"
-            aria-label="녹취록에서 찾기" onChange={(e) => setQuery(e.target.value)} />
         </span>
-        <span className="meta-value">
-          {needle ? `${rows.length}건` : `구간 ${segments.length}개`}
-        </span>
+        <input type="search" className="field transcript-search" value={query} placeholder="녹취록에서 찾기"
+          aria-label="녹취록에서 찾기" onChange={(e) => setQuery(e.target.value)} />
       </h2>
 
       {shown && (
         <div id={listId}>
-          <p className="help transcript-state">
-            {reviewed ? '원음과 대조해 검토한 녹취록이다.' : '아직 원음과 대조하지 않은 녹취록이다. 들리는 것과 다를 수 있다.'}
-          </p>
+          {/* 검토를 마친 녹취록은 아무 말도 붙이지 않는다. 미덥지 않을 때만 알린다. */}
+          {!reviewed && (
+            <p className="help transcript-state">아직 원음과 대조하지 않은 녹취록이다. 들리는 것과 다를 수 있다.</p>
+          )}
           {rows.length === 0 ? (
             <p className="help">그 말이 든 구간이 없다.</p>
           ) : (

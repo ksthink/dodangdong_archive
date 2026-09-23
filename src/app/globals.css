@@ -508,13 +508,14 @@ ul.help { margin-top: var(--space-2); display: grid; gap: var(--space-1); }
 /* 녹취록 — 왼쪽 시각 칸, 오른쪽 말. 지금 구간은 먹색 왼쪽 선(구술 인용과 같은 문법) */
 /* 녹취록 제목 줄 — 왼쪽에 펼침 손잡이·제목·찾기, 오른쪽에 건수 */
 .transcript-head { flex-wrap: wrap; }
-.transcript-head-left { display: flex; align-items: baseline; gap: var(--space-3); flex: 1 1 auto; min-width: 0; }
+.transcript-head-left { display: flex; align-items: baseline; gap: var(--space-2); min-width: 0; }
+/* 펼침 손잡이 — 제목 바로 오른쪽. 테를 두르지 않고 화살표만 둔다.
+   인장색은 원래 "확인됨" 표시에만 쓰지만, 이 손잡이 하나는 예외로 그 색을 쓴다(DESIGN.md 9장). */
 .transcript-toggle {
-  font: var(--text-meta-value); color: var(--ink); cursor: pointer;
-  background: var(--paper); border: var(--stroke) solid var(--ink);
-  padding: 0 var(--space-2); line-height: 24px; align-self: center;
+  font: var(--text-pixel-label); color: var(--mark); cursor: pointer;
+  background: none; border: 0; padding: 0;
 }
-.transcript-toggle:hover { background: var(--ink); color: var(--on-ink); }
+.transcript-toggle:hover { color: var(--ink); }
 .transcript-search { width: auto; flex: 0 1 220px; padding: var(--space-1) var(--space-2); }
 @media (max-width: 559px) {
   .transcript-search { flex: 1 1 100%; }
