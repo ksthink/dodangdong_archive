@@ -5,6 +5,13 @@ import { isAllowedMime } from '@/lib/media-types';
 
 export const dynamic = 'force-dynamic';
 
+/** `If-None-Match` 는 값이 여럿일 수 있고 `W/` 가 붙기도 한다. `*` 는 "있기만 하면" 이다. */
+function matchesEtag(header: string | null, etag: string): boolean {
+  if (!header) return false;
+  if (header.trim() === '*') return true;
+  return header.split(',').some((one) => one.trim().replace(/^W\//, '') === etag);
+}
+
 /** 헤더에 넣을 파일 이름. ASCII 만 따로 남기고 원래 이름은 RFC 5987 로 덧붙인다. */
 function disposition(kind: 'inline' | 'attachment', name: string | null) {
   if (!name) return kind;
@@ -25,7 +32,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   // RLS 가 이미 손님에게는 공개 자료의 file 행만 준다. 못 찾으면 없는 것과 같다.
   const { data: file } = await supabase
     .from('file')
-    .select('storage_path, mime, original_filename, item_id, item(access_level)')
+    .select('storage_path, mime, original_filename, checksum_md5, item_id, item(access_level)')
     .eq('id', fileId)
     .maybeSingle();
 
@@ -36,9 +43,24 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   // 손님에게 비공개가 새지 않게 한 번 더 확인한다.
   if (!isPublic && !(await getAdmin())) return new NextResponse('찾을 수 없다.', { status: 404 });
 
+  // Drive 가 적어 준 md5 를 그대로 검증자로 쓴다. 바이트가 바뀌면 값도 바뀐다.
+  const etag = file.checksum_md5 ? `"${file.checksum_md5}"` : null;
+  const range = request.headers.get('range');
+  // 공개 자료만 edge 에 잠깐 둔다. 비공개는 어디에도 남기지 않는다.
+  const cache = isPublic ? 'public, max-age=0, s-maxage=60' : 'private, no-store';
+
+  // 브라우저가 "이 값이면 그대로냐" 고 물으면 여기서 답한다 — Drive 까지 가지 않는다.
+  // 범위 요청은 따지지 않는다. 부분 응답은 조건을 다르게 다뤄야 하기 때문이다.
+  if (!range && etag && matchesEtag(request.headers.get('if-none-match'), etag)) {
+    return new NextResponse(null, {
+      status: 304,
+      headers: { ETag: etag, 'Cache-Control': cache, 'X-Content-Type-Options': 'nosniff' },
+    });
+  }
+
   try {
     await warm;
-    const upstream = await fileStream(file.storage_path, request.headers.get('range'));
+    const upstream = await fileStream(file.storage_path, range);
     if (!upstream.ok && upstream.status !== 206) {
       return new NextResponse('원본을 읽지 못했다.', { status: upstream.status });
     }
@@ -54,17 +76,15 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       if (v) headers.set(h, v);
     }
     headers.set('Accept-Ranges', 'bytes');
+    // 우리 검증자로 덮어쓴다 — Drive 가 무엇을 주든 다음 요청은 위에서 걸러진다.
+    if (etag) headers.set('ETag', etag);
     // 적어 준 갈래 그대로 읽게 한다. 브라우저가 내용을 보고 짐작하면 위 검사가 헛돈다.
     headers.set('X-Content-Type-Options', 'nosniff');
     headers.set('Content-Disposition', disposition(inline ? 'inline' : 'attachment', file.original_filename));
     // 혹시 펼쳐지더라도 같은 출처의 권한은 주지 않는다.
     headers.set('Content-Security-Policy', 'sandbox');
-    // 공개 자료만 edge 에 잠깐 둔다. 비공개는 어디에도 남기지 않는다.
     // 부분 응답(206)은 범위마다 다른 바이트라 캐시에 두지 않는다.
-    headers.set(
-      'Cache-Control',
-      isPublic && upstream.status !== 206 ? 'public, max-age=0, s-maxage=60' : 'private, no-store',
-    );
+    headers.set('Cache-Control', upstream.status === 206 ? 'private, no-store' : cache);
 
     return new NextResponse(upstream.body, { status: upstream.status, headers });
   } catch (cause) {

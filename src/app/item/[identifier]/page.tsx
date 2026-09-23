@@ -102,14 +102,19 @@ export default async function ItemPage({ params }: Params) {
 
         {images.length > 0 && (
           <div className={images.length === 1 ? 'figure-one' : 'figure-grid'}>
-            {images.map((f) => (
-              <a key={f.id} href={`/api/media/${f.id}`} target="_blank" rel="noreferrer">
-                {/* 원본 비율을 지킨다. 필터·세피아를 입히지 않는다. */}
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={`/api/media/${f.id}`} alt={`${item.title} — ${f.original_filename ?? ''}`}
-                  width={f.width ?? undefined} height={f.height ?? undefined} loading="lazy" />
-              </a>
-            ))}
+            {images.map((f) => {
+              // 여러 장은 한 변 180~300px 네모로 깔리므로 썸네일(480px)이면 넉넉하다.
+              // 한 장일 때는 80vh 까지 크게 보이니 원본을 그대로 쓴다. 누르면 늘 원본이 열린다.
+              const shown = images.length === 1 ? f : (derived(f.id, 'thumb') ?? f);
+              return (
+                <a key={f.id} href={`/api/media/${f.id}`} target="_blank" rel="noreferrer">
+                  {/* 원본 비율을 지킨다. 필터·세피아를 입히지 않는다. */}
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={`/api/media/${shown.id}`} alt={`${item.title} — ${f.original_filename ?? ''}`}
+                    width={f.width ?? undefined} height={f.height ?? undefined} loading="lazy" decoding="async" />
+                </a>
+              );
+            })}
           </div>
         )}
 
