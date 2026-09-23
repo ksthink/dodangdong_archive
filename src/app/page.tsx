@@ -25,20 +25,18 @@ export default async function Home() {
   // 히어로에는 공개 이야기·자료만 건다 — resolveHero 가 직접 거른다.
   const heroSlides = await resolveHero(supabase);
 
-  const [{ data: items }, { data: stories }, { data: counts }] = await Promise.all([
+  const [{ data: items }, { data: people, count: peopleCount }, { data: counts }] = await Promise.all([
     supabase
       .from('item')
       .select('id, identifier, title, type, created_edtf, date_verified')
       .order('submitted_at', { ascending: false })
       .limit(8),
+    // 이야기는 히어로가 이미 걸고 있다 — 여기서는 인물을 보인다. /people 과 같은 순서(나이 든 사람부터)
     supabase
-      .from('collection')
-      .select('id, title, summary, period_edtf')
-      .eq('kind', 'story')
-      // /story 와 같은 순서 — 편성 순서, 같으면 최근 것 먼저
-      .order('sort_order')
-      .order('created_at', { ascending: false })
-      .limit(2),
+      .from('person')
+      .select('id, identifier, display_name, short_name, real_name, birth_edtf, death_edtf, relation_to_root', { count: 'exact' })
+      .order('born_year', { ascending: true, nullsFirst: false })
+      .limit(6),
     supabase.from('item').select('type'),
   ]);
 
@@ -83,21 +81,28 @@ export default async function Home() {
         </section>
 
         <section className="section">
-          <h2 className="section-title">이야기</h2>
-          {stories?.length ? (
-            <ul className="grid">
-              {stories.map((s) => (
-                <li key={s.id} className="card">
-                  <Link href={`/story/${s.id}`}>
-                    <p className="heading">{s.title}</p>
-                    {s.period_edtf && <p className="meta-value">{s.period_edtf}</p>}
-                    {s.summary && <p className="body-sm" style={{ marginTop: 'var(--space-2)' }}>{s.summary}</p>}
+          <h2 className="section-title">
+            인물 <Link className="meta-value" href="/people">전체 {peopleCount ?? 0}명 · 가계도 보기</Link>
+          </h2>
+          {people?.length ? (
+            <ul className="person-grid">
+              {people.map((p) => (
+                <li key={p.id} className="card">
+                  <Link href={`/people/${p.identifier}`} className="person-card">
+                    {/* 얼굴 사진이 없으면 디더 면에 호칭 첫 글자 — /people 과 같은 카드 */}
+                    <div className="face"><span>{(p.short_name ?? p.display_name).slice(0, 1)}</span></div>
+                    <div>
+                      <p className="heading">{p.short_name ?? p.display_name}</p>
+                      {p.real_name && p.real_name !== p.short_name && <p className="body-sm">{p.real_name}</p>}
+                      <p className="meta-value">{p.birth_edtf ?? '?'}–{p.death_edtf ?? ''}</p>
+                      <p className="meta-value">{p.relation_to_root ?? '관계 미입력'}</p>
+                    </div>
                   </Link>
                 </li>
               ))}
             </ul>
           ) : (
-            <p className="empty">아직 엮은 이야기가 없다.</p>
+            <p className="empty">아직 등록된 인물이 없다.</p>
           )}
         </section>
 
