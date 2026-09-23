@@ -186,7 +186,7 @@ a:hover { text-decoration: underline; text-decoration-thickness: var(--stroke); 
 /* 관리 띠 — 관리 화면임을 알리는 유일한 표시 */
 .adminbar { background: var(--ink); color: var(--on-ink); display: flex; align-items: center; gap: var(--space-4); padding: var(--space-3) var(--space-4); font: var(--text-body-sm); }
 .adminbar-mode { background: var(--on-ink); color: var(--ink); padding: 0 var(--space-1); font: var(--text-pixel-label); }
-.adminbar-nav { display: flex; gap: var(--space-4); margin-left: auto; }
+.adminbar-nav { display: flex; align-items: center; gap: var(--space-4); margin-left: auto; }
 .adminbar-out { background: none; border: var(--stroke) solid var(--on-ink); color: var(--on-ink); font: var(--text-body-sm); padding: 0 var(--space-2); cursor: pointer; }
 
 /* 등록·수정 양식 — 2열, 설명과 주제분류만 두 칸 폭 */
