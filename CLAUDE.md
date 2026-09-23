@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 도당동 아카이브 — 한 집안의 사진·편지·음성·영상을 더블린코어 15요소로 기술해 두는 곳.
 사람이 읽는 안내는 [README.md](README.md), 디자인 규칙은 [DESIGN.md](DESIGN.md), DB 규칙은
-[supabase/README.md](supabase/README.md) 에 있다. 여기에는 그 문서들이 말하지 않는 것,
+[supabase/README.md](supabase/README.md), 지금까지의 결정과 남은 일은 [HANDOFF.md](HANDOFF.md) 에 있다. 여기에는 그 문서들이 말하지 않는 것,
 코드를 여러 개 읽어야 알 수 있는 것만 적는다.
 
 ## 명령
