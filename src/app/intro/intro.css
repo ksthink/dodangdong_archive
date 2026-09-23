@@ -85,7 +85,9 @@
   /* 그림에 이미 주사선이 그어져 있다 — CSS 로 덧입히지 않는다(무늬가 겹쳐 어른거린다) */
   display: block;
   height: auto;
-  width: 192px;
+  /* 그림 속 줄무늬가 화면에 깔린 주사선과 같은 3px 주기로 떨어지는 크기다
+     (원본 1254px 에서 한 주기가 17.4px → 216px 에서 3px). 크기를 바꾸면 결이 어긋난다. */
+  width: 216px;
 }
 .intro-head p, .intro-head h1 { font: inherit; margin: 0; }
 /* 기계가 제 이름을 대는 머리글 — 고정폭이라야 줄이 가지런하다 */
@@ -144,12 +146,12 @@
   .intro { font: var(--text-title) }
   .intro-head > div, .intro-form input { font-size: 36px; line-height: 48px }
   .intro-mail { font-size: 24px; line-height: 36px }
-  .intro-logo { width: 144px }
+
 }
 
 @media (max-width: 900px) {
-  .intro-head { gap: 24px; margin-bottom: 24px }
-  .intro-logo { width: 128px }
+  /* 로고 크기는 줄이지 않는다(줄이면 줄무늬 결이 어긋난다) — 대신 글 위로 올린다 */
+  .intro-head { flex-direction: column; gap: 24px; margin-bottom: 24px }
   .intro-form { grid-template-columns: 1fr; gap: 0 }
   .intro-keys { gap: 24px; margin-top: 24px }
   .intro-msg { margin-bottom: 24px }
