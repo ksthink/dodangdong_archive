@@ -326,6 +326,11 @@ a:hover { text-decoration: underline; text-decoration-thickness: var(--stroke); 
   background: repeating-conic-gradient(var(--rule) 0% 25%, var(--paper-sunken) 0% 50%) 0 0 / 4px 4px; }
 .face span { font: var(--text-title); background: var(--paper); padding: 0 var(--space-1); }
 .face.is-l { width: 144px; height: 144px; box-shadow: var(--shadow-pixel); }
+/* 첫 화면의 작은 인물 카드 — 형태분류 카드와 같은 폭에 들어가도록 얼굴을 48px 로 줄인다 */
+.face.is-s { width: 48px; height: 48px; flex: none; }
+.face.is-s span { font: var(--text-body-sm); }
+.person-mini { display: flex; gap: var(--space-3); align-items: flex-start; }
+.person-mini-text { min-width: 0; }
 .person-head { display: grid; gap: var(--space-6); grid-template-columns: 1fr; }
 @media (min-width: 620px) { .person-head { grid-template-columns: 144px 1fr; } }
 .facts { display: grid; grid-template-columns: max-content 1fr; gap: var(--space-1) var(--space-4); margin-top: var(--space-4); font: var(--text-body); }

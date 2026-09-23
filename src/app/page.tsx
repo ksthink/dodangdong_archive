@@ -34,7 +34,7 @@ export default async function Home() {
     // 이야기는 히어로가 이미 걸고 있다 — 여기서는 인물을 보인다. 최근에 손댄 여덟 명.
     supabase
       .from('person')
-      .select('id, identifier, display_name, short_name, real_name, birth_edtf, death_edtf, relation_to_root', { count: 'exact' })
+      .select('id, identifier, display_name, short_name, real_name, birth_edtf, death_edtf', { count: 'exact' })
       .order('modified_at', { ascending: false })
       .limit(8),
     supabase.from('item').select('type'),
@@ -87,18 +87,18 @@ export default async function Home() {
           <h2 className="section-title">
             인물 <Link className="meta-value" href="/people">최근 수정 순 8명 · 전체 {peopleCount ?? 0}명</Link>
           </h2>
+          {/* 형태분류와 같은 격자(넓은 화면에서 네 장) — 그래서 카드도 작게 짠다 */}
           {people?.length ? (
-            <ul className="person-grid">
+            <ul className="grid">
               {people.map((p) => (
                 <li key={p.id} className="card">
-                  <Link href={`/people/${p.identifier}`} className="person-card">
-                    {/* 얼굴 사진이 없으면 디더 면에 호칭 첫 글자 — /people 과 같은 카드 */}
-                    <div className="face"><span>{(p.short_name ?? p.display_name).slice(0, 1)}</span></div>
-                    <div>
+                  <Link href={`/people/${p.identifier}`} className="person-mini">
+                    {/* 얼굴 사진이 없으면 디더 면에 호칭 첫 글자 */}
+                    <div className="face is-s"><span>{(p.short_name ?? p.display_name).slice(0, 1)}</span></div>
+                    <div className="person-mini-text">
                       <p className="heading">{p.short_name ?? p.display_name}</p>
                       {p.real_name && p.real_name !== p.short_name && <p className="body-sm">{p.real_name}</p>}
                       <p className="meta-value">{p.birth_edtf ?? '?'}–{p.death_edtf ?? ''}</p>
-                      <p className="meta-value">{p.relation_to_root ?? '관계 미입력'}</p>
                     </div>
                   </Link>
                 </li>
