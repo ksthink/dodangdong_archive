@@ -6,6 +6,7 @@ import { TYPE_LABEL, ACCESS_LABEL } from '@/lib/labels';
 import SiteHeader from '@/components/site-header';
 import SiteFooter from '@/components/site-footer';
 import TranscriptView from '@/components/transcript-view';
+import AudioSpectrum from '@/components/audio-spectrum';
 import type { Segment } from '@/lib/transcript';
 
 export const dynamic = 'force-dynamic';
@@ -117,7 +118,7 @@ export default async function ItemPage({ params }: Params) {
             {others.map((f) => (
               <li key={f.id}>
                 {f.mime?.startsWith('audio/') ? (
-                  <audio id={`media-${f.id}`} controls preload="none" src={`/api/media/${f.id}`} />
+                  <AudioSpectrum fileId={f.id} src={`/api/media/${f.id}`} />
                 ) : f.mime?.startsWith('video/') ? (() => {
                   // 재생용 사본(H.264·목차 앞)이 있으면 그것을 튼다. 원본은 아래 링크로 받는다.
                   const stream = derived(f.id, 'stream');

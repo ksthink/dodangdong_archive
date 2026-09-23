@@ -273,6 +273,15 @@ a:hover { text-decoration: underline; text-decoration-thickness: var(--stroke); 
 /* 세로 영상이 화면보다 길어지지 않게 — 남는 자리는 먹색 띠 */
 .media-list video { max-height: 80vh; background: var(--ink); }
 
+/* 음성 스펙트럼 — 재생기 위에 얹는 소리의 모양. 소리가 나는 동안에만 움직인다.
+   캔버스에 직접 그리므로 위의 `animation: none` 이 걸리지 않는다. */
+.spectrum { display: grid; gap: var(--space-2); }
+.spectrum-canvas {
+  display: block; width: 100%;
+  border: var(--stroke) solid var(--ink);
+  background: var(--paper-sunken);
+}
+
 /* 상세정보 표 — 요소명은 들어간 면, 행 사이만 rule */
 .meta-table { border-top: var(--stroke-heavy) solid var(--ink); }
 .meta-row { display: grid; grid-template-columns: 1fr; border-bottom: var(--stroke) solid var(--rule); }
