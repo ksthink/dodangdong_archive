@@ -115,6 +115,10 @@
 .intro-key:hover, .intro-key:focus-visible { background: var(--intro-ink); color: var(--intro-paper); outline: 0 }
 .intro-key[disabled] { cursor: default; opacity: 0.4 }
 
+/* 만든 곳에 편지 보내기 — 단추(대괄호)와 헷갈리지 않게 밑줄로 표시한다 */
+.intro-mail { text-decoration: underline; text-underline-offset: 4px; text-decoration-thickness: 2px }
+.intro-mail:hover, .intro-mail:focus-visible { background: var(--intro-ink); color: var(--intro-paper); outline: 0 }
+
 /* 네모 커서. 깜빡이지 않는다 — 가만히 놓인 표시다 */
 .intro-caret { display: inline-block }
 

@@ -162,6 +162,26 @@ npm run build && npm run start
 ADMIN_PASSWORD='…' node scripts/backfill-thumbs.mjs --dry-run
 ```
 
+## 판번호
+
+인트로 머리글에 `ARCHIVE v1.0.0 · UPDATED 2026-09-23` 한 줄이 박힌다. 두 값의 출처는 이렇다.
+
+| | 어디서 오나 |
+| --- | --- |
+| 판번호 | `package.json` 의 `version`. GitHub 릴리스 태그(`v1.0.0`)와 같은 값으로 맞춘다 |
+| 갱신 날짜 | **빌드한 때** = 배포한 때(한국 시간). 무엇을 고쳤든 올리면 저절로 바뀐다 |
+
+둘 다 `next.config.ts` 가 빌드할 때 한 번 정해 굳힌다(`RELEASE`, `BUILT_AT`). 화면에서 시각을 다시 재지 않으므로
+서버와 브라우저가 늘 같은 값을 그린다.
+
+판을 올릴 때는 두 곳을 같이 움직인다.
+
+```bash
+npm version 1.1.0 --no-git-tag-version   # package.json
+git commit -am "판을 1.1.0 으로 올린다" && git push
+gh release create v1.1.0 --title v1.1.0 --notes "…"
+```
+
 ## 폴더
 
 ```

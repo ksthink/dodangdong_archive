@@ -10,9 +10,16 @@ const HEAD = [
   'SMALL-SCALE ARCHIVE SYSTEM',
   '도당동 아카이브 · DODANGDONG ARCHIVE',
   '----------------------------------------',
-  'ARCHIVE v1.0.0',
-  '©metaphr',
 ];
+
+/**
+ * 판번호와 갱신 날짜는 빌드할 때 박힌다(next.config.ts).
+ * 판번호는 package.json = GitHub 릴리스 태그, 날짜는 빌드한 때 = 배포한 때다.
+ */
+const RELEASE = process.env.RELEASE ?? 'v0.0.0';
+const BUILT_AT = process.env.BUILT_AT;
+/** 한국 시간의 날짜만. 서버와 브라우저가 같은 값을 내야 하므로 로캘에 기대지 않는다. */
+const UPDATED = new Date(new Date(BUILT_AT ?? 0).getTime() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
 
 export default function IntroTerminal({ next }: { next: string }) {
   const root = useRef<HTMLDivElement>(null);
@@ -75,6 +82,12 @@ export default function IntroTerminal({ next }: { next: string }) {
               <p key={line} className={line.startsWith('---') ? 'intro-line intro-rule' : 'intro-line'}
                 style={{ '--i': i + 1 } as React.CSSProperties}>{line}</p>
             ))}
+            <p className="intro-line" style={{ '--i': 3 } as React.CSSProperties}>
+              ARCHIVE {RELEASE} · UPDATED {UPDATED}
+            </p>
+            <p className="intro-line" style={{ '--i': 4 } as React.CSSProperties}>
+              <a className="intro-mail" href="mailto:ksthink@metaphr.dev">©metaphr</a>
+            </p>
           </div>
         </header>
 
