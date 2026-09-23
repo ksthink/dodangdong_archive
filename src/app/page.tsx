@@ -1,6 +1,5 @@
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
-import { createAnonClient } from '@/lib/supabase/anon';
 import { resolveHero } from '@/lib/hero';
 import Hero from '@/components/hero';
 import { thumbsFor } from '@/lib/thumbs';
@@ -8,8 +7,7 @@ import Thumb from '@/components/thumb';
 import SiteHeader from '@/components/site-header';
 import SiteFooter from '@/components/site-footer';
 
-// 첫 화면은 로그인 화면이 아니라 아카이브 그 자체다.
-// 손님은 세션 없이 여기에 닿고, RLS 가 공개 자료만 돌려준다.
+// 첫 화면은 로그인 화면이 아니라 아카이브 그 자체다. 문(인트로)을 지나온 사람만 여기에 닿는다.
 export const dynamic = 'force-dynamic';
 
 const TYPE_LABEL: Record<string, string> = {
@@ -24,8 +22,8 @@ const TYPE_LABEL: Record<string, string> = {
 
 export default async function Home() {
   const supabase = await createClient();
-  // 히어로는 누가 보든 손님에게 보이는 것으로 고른다 — 관리자에게 비공개 이야기가 걸려 보이지 않게.
-  const heroSlides = await resolveHero(createAnonClient());
+  // 히어로에는 공개 이야기·자료만 건다 — resolveHero 가 직접 거른다.
+  const heroSlides = await resolveHero(supabase);
 
   const [{ data: items }, { data: stories }, { data: counts }] = await Promise.all([
     supabase

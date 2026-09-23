@@ -97,13 +97,12 @@ npm run tokens    # design/tokens.json → src/app/tokens.css (직접 고치지 
 | 메타데이터 | Supabase(Postgres + Auth + RLS) |
 | 원본 파일 | Google Drive(`drive.file` 권한만) |
 
-- **권한은 DB 가 정한다.** 쓰기는 `private.is_admin()` 뿐이고, 손님(anon)은 공개 자료와 거기 딸린 행만 받는다.
+- **권한은 DB 가 정한다.** 쓰기도 읽기도 `private.is_admin()` 뿐이다. 손님(anon)은 한 행도 받지 못한다.
   - 비공개는 행 자체가 오지 않으므로 목록·연표·건수·가계도에서 저절로 빠진다.
   - 서버 액션도 모두 관리자인지 다시 확인한다.
   - 자세한 규칙과 마이그레이션 목록은 [`supabase/README.md`](supabase/README.md) 에 있다.
-  - **아직 열려 있는 틈**: 사이트는 앱에서 잠갔지만, DB 의 `anon` 읽기 정책은 그대로다. 브라우저에 실리는
-    publishable 키를 들고 Supabase 를 곧장 부르면 **공개**로 표시한 행은 아직 읽힌다. 완전히 닫으려면
-    `anon` 의 `guest_read` 정책을 걷어내야 한다 — 그러면 공개/비공개 구분 자체가 뜻을 잃는다.
+  - DB 도 잠겨 있다(0014): `anon` 에는 정책도 표 권한도 없어 publishable 키만으로는 아무것도 읽지 못한다.
+    공개/비공개는 이제 "첫 화면 히어로에 걸리는가" 의 뜻이다.
 - **원본은 Drive 에 그대로 둔다.** 브라우저가 resumable 세션으로 Drive 에 직접 올리고, 앱은 파일 id 만 적는다.
   - `file.storage_path` 가 곧 Drive 파일 id 다.
   - Drive 의 파일 이름은 `식별자_올린시각(한국 시간, 초까지).확장자` 다. 예: `DA-0017_20260922190012.jpg`.

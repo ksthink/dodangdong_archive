@@ -1,6 +1,5 @@
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
-import { createAnonClient } from '@/lib/supabase/anon';
 import { resolveHero, todayKST } from '@/lib/hero';
 import { updateHeroSlot } from '@/lib/hero-actions';
 
@@ -24,8 +23,8 @@ export default async function HeroSchedulePage({
   const [{ data: slots }, { data: stories }, live] = await Promise.all([
     supabase.from('hero_slot').select('*').order('slot'),
     supabase.from('collection').select('id, title, access_level').eq('kind', 'story').order('created_at', { ascending: false }),
-    // 지금 손님에게 실제로 보이는 것 — 첫 화면과 같은 규칙, 손님 권한
-    resolveHero(createAnonClient(), today),
+    // 지금 첫 화면에 실제로 걸리는 것 — 첫 화면과 같은 규칙(공개만)
+    resolveHero(supabase, today),
   ]);
   const liveBySlot = new Map(live.map((s) => [s.slot, s]));
 

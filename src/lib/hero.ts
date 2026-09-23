@@ -9,8 +9,14 @@ import { thumbsFor } from '@/lib/thumbs';
  * 같은 이야기나 같은 자동 종류가 두 자리에 겹치지 않는다. 채울 것이 없으면 그 자리는 비운다.
  * 자동으로 넘기지 않는다 — 사람이 넘긴다.
  *
- * 부르는 쪽은 손님 권한 클라이언트를 넘긴다. 비공개 이야기·자료는 행이 오지 않으니 따로 거르지 않는다.
+ * 히어로에는 **공개** 이야기·자료만 건다. 예전에는 손님 권한 클라이언트를 넘겨 RLS 에 맡겼는데,
+ * 손님 읽기를 DB 에서 걷어낸 뒤(0014)로는 세션 클라이언트를 받아 여기서 직접 거른다.
+ * 그래서 "공개" 는 이제 "첫 화면에 걸릴 수 있는가" 라는 뜻이다.
  */
+
+/** 공개이고 접히지 않은 자료만 — 히어로의 모든 자료 조회에 건다 */
+const PUBLIC_ITEM = { access_level: 'public', is_archived: false } as const;
+type ItemRef = { id: string; title: string; access_level: string; is_archived: boolean } | null;
 
 export type HeroSource = 'scheduled' | 'story' | 'today' | 'recent';
 export type HeroSlide = {
@@ -41,15 +47,18 @@ type Story = { id: string; title: string; summary: string | null; period_edtf: s
 async function storySlide(db: SupabaseClient, s: Story): Promise<Omit<HeroSlide, 'slot' | 'source' | 'why'>> {
   const { data: blocks } = await db
     .from('curation_block')
-    .select('position, curation_ref(sort_order, item(id, title))')
+    .select('position, curation_ref(sort_order, item(id, title, access_level, is_archived))')
     .eq('collection_id', s.id)
     .order('position');
-  // 블록 순서대로 엮은 자료. 표지가 지정되어 있으면 맨 앞에.
+  // 블록 순서대로 엮은 자료 가운데 공개된 것만. 표지가 지정되어 있으면 맨 앞에.
   const items: { id: string; title: string }[] = [];
   for (const b of blocks ?? []) {
-    const refs = ((b.curation_ref ?? []) as unknown as { sort_order: number; item: { id: string; title: string } | null }[])
+    const refs = ((b.curation_ref ?? []) as unknown as { sort_order: number; item: ItemRef }[])
       .sort((x, y) => x.sort_order - y.sort_order);
-    for (const r of refs) if (r.item && !items.some((i) => i.id === r.item!.id)) items.push(r.item);
+    for (const r of refs) {
+      const it = r.item;
+      if (it && it.access_level === 'public' && !it.is_archived && !items.some((i) => i.id === it.id)) items.push({ id: it.id, title: it.title });
+    }
   }
   if (s.cover_item_id) {
     const at = items.findIndex((i) => i.id === s.cover_item_id);
@@ -73,6 +82,7 @@ async function todaySlide(db: SupabaseClient, today: string): Promise<Omit<HeroS
   const { data } = await db
     .from('item')
     .select('id, identifier, title, type, created_start')
+    .match(PUBLIC_ITEM)
     .eq('date_verified', true)
     .eq('created_precision', 'day');
   const md = today.slice(5);
@@ -102,11 +112,11 @@ async function todaySlide(db: SupabaseClient, today: string): Promise<Omit<HeroS
 /** 가장 최근에 들어온 공개 자료가 속한 묶음. */
 async function recentSlide(db: SupabaseClient): Promise<Omit<HeroSlide, 'slot' | 'source' | 'why'> | null> {
   const { data: latest } = await db
-    .from('item').select('bundle_id').order('submitted_at', { ascending: false }).limit(1).maybeSingle();
+    .from('item').select('bundle_id').match(PUBLIC_ITEM).order('submitted_at', { ascending: false }).limit(1).maybeSingle();
   if (!latest) return null;
   const [{ data: bundle }, { data: items }] = await Promise.all([
     db.from('bundle').select('identifier, title, source').eq('id', latest.bundle_id).maybeSingle(),
-    db.from('item').select('id, title').eq('bundle_id', latest.bundle_id).order('submitted_at', { ascending: false }),
+    db.from('item').select('id, title').match(PUBLIC_ITEM).eq('bundle_id', latest.bundle_id).order('submitted_at', { ascending: false }),
   ]);
   if (!bundle || !items?.length) return null;
   const thumbs = await thumbsFor(db, items.map((i) => i.id));
@@ -126,7 +136,7 @@ export async function resolveHero(db: SupabaseClient, today = todayKST()): Promi
   const [{ data: slots }, { data: storiesData }] = await Promise.all([
     db.from('hero_slot').select('slot, collection_id, auto_kind, starts_on, ends_on').order('slot'),
     db.from('collection').select('id, title, summary, period_edtf, cover_item_id')
-      .eq('kind', 'story').order('sort_order').order('created_at', { ascending: false }),
+      .eq('kind', 'story').eq('access_level', 'public').order('sort_order').order('created_at', { ascending: false }),
   ]);
   const stories = (storiesData ?? []) as Story[];
   const usedStories = new Set<string>();
@@ -149,11 +159,11 @@ export async function resolveHero(db: SupabaseClient, today = todayKST()): Promi
     let source: HeroSource = 'story';
     let why = '';
 
-    // 1) 기간 안에 편성된 이야기 — 비공개면 손님에게 행이 오지 않아 건너뛴다
+    // 1) 기간 안에 편성된 이야기 — 비공개면 stories 에 없으니 건너뛴다
     if (s.collection_id) {
       const scheduled = stories.find((x) => x.id === s.collection_id);
       if (!inRange(today, s.starts_on, s.ends_on)) why = '편성 기간이 아니어서 자동으로 채웠다';
-      else if (!scheduled) why = '편성한 이야기가 비공개라 손님에게 보이지 않아 자동으로 채웠다';
+      else if (!scheduled) why = '편성한 이야기가 비공개라 첫 화면에 걸지 않고 자동으로 채웠다';
       else if ((slide = await tryStory(scheduled))) { source = 'scheduled'; why = '편성한 이야기'; }
       else why = '같은 이야기가 앞 자리에 있어 자동으로 채웠다';
     }

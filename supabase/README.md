@@ -17,12 +17,14 @@
 | `0011_file_media_info.sql` | 파일에 코덱·목차 위치(faststart) 칸. 역할 설명(원본·썸네일·재생용) |
 | `0012_one_stream_per_original.sql` | 원본 하나에 재생용(stream) 하나 |
 | `0013_tags_retired.sql` | 자유어 태그(`item.tags`)를 접는다 — 주제는 주제분류로만. 적힌 값은 남긴다 |
+| `0014_close_guest_read.sql` | 손님(anon) 읽기를 걷어낸다 — guest_read 정책·표 권한·기본 권한 전부. 사이트가 잠겼으니 DB 도 잠근다 |
 
 ## 권한 규칙
 
 - 쓰기는 `private.is_admin()` 뿐이다 — `admin_user` 에 등록된 uid만.
-- 손님(anon)은 `access_level = 'public'` 자료와 거기 딸린 행만 읽는다. 비공개는 행 자체가 오지 않으므로 목록·연표·건수에서 저절로 빠진다.
-- `acquisition` · `admin_user` · `app_setting`(Google Drive 토큰) · `event_log` 에는 손님 정책이 없다 — 한 행도 주지 않는다.
+- **손님(anon)은 아무것도 읽지 못한다**(0014). 정책도 표 권한도 없어 REST 는 401 이다. 사이트 자체가 로그인해야 열린다(`src/proxy.ts`).
+- 로그인했지만 `admin_user` 에 없는 사람도 0행이다 — 모든 정책이 `private.is_admin()` 뿐이다.
+- `access_level` 은 이제 "첫 화면 히어로에 걸릴 수 있는가" 의 뜻이다(`src/lib/hero.ts` 가 직접 거른다). 0005·0007·0008 의 "손님에게 보이는" 규칙은 0014 로 정책이 사라져 더는 돌지 않는다.
 
 ## 관리자 계정 만들기
 

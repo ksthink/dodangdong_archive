@@ -2,7 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 
 /**
  * 자료마다 목록에 쓸 썸네일 하나(첫 원본의 썸네일)를 찾는다.
- * 손님에게는 RLS 가 공개 자료의 파일만 주므로 따로 거르지 않는다.
+ * 건네받은 자료 id 에 대해서만 찾는다 — 무엇을 보여 줄지는 부르는 쪽이 정한다.
  */
 export async function thumbsFor(supabase: SupabaseClient, itemIds: string[]) {
   const map = new Map<string, string>();
