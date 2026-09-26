@@ -29,7 +29,11 @@ export default async function ItemsPage({
 
   return (
     <main className="page">
-      <h1 className="title">자료 목록</h1>
+      {/* 등록은 이 화면의 첫 일이라 제목 줄 오른쪽에 둔다 */}
+      <div className="page-head">
+        <h1 className="title">자료 목록</h1>
+        <Link className="button is-secondary" href="/admin/items/new">자료 등록</Link>
+      </div>
 
       {deleted && <p className="notice" role="status">{deleted} 을(를) 지웠다. 되돌릴 수 없다.</p>}
 
@@ -45,7 +49,6 @@ export default async function ItemsPage({
               placeholder="제목·설명에서 찾기 — 띄어쓰기는 따지지 않는다" aria-label="자료 찾기" />
             <button className="button" type="submit">찾기</button>
           </form>
-          <Link className="button is-secondary" href="/admin/items/new">자료 등록</Link>
         </div>
 
         {items.length ? (
