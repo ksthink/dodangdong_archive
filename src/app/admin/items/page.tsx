@@ -33,17 +33,20 @@ export default async function ItemsPage({
 
       {deleted && <p className="notice" role="status">{deleted} 을(를) 지웠다. 되돌릴 수 없다.</p>}
 
-      <form action="/admin/items" className="searchbar">
-        <input className="field" type="search" name="q" defaultValue={q}
-          placeholder="제목·설명에서 찾기 — 띄어쓰기는 따지지 않는다" aria-label="자료 찾기" />
-        <button className="button" type="submit">찾기</button>
-      </form>
-
       <section className="section">
-        <h2 className="section-title">
-          <span>{q ? `‘${q}’ ${items.length}건` : `전체 ${items.length}건`}</span>
+        {/*
+          제목 줄 가운데에 찾기를 둔다. <form> 은 <h2> 안에 넣을 수 없는 요소라
+          줄 자체는 div 로 두고 제목만 h2 로 남긴다 — 보이는 것은 같고 문서 구조는 성하다.
+        */}
+        <div className="section-title list-head">
+          <h2 className="list-count">{q ? `‘${q}’ ${items.length}건` : `전체 ${items.length}건`}</h2>
+          <form action="/admin/items" className="list-search">
+            <input className="field" type="search" name="q" defaultValue={q}
+              placeholder="제목·설명에서 찾기 — 띄어쓰기는 따지지 않는다" aria-label="자료 찾기" />
+            <button className="button" type="submit">찾기</button>
+          </form>
           <Link className="button is-secondary" href="/admin/items/new">자료 등록</Link>
-        </h2>
+        </div>
 
         {items.length ? (
           <table className="table">
