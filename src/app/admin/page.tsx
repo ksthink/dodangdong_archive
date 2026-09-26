@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
-import StoragePies, { SHADES, type Slice } from '@/components/storage-pies';
+import StorageRows, { type Row } from '@/components/storage-rows';
 
 export const dynamic = 'force-dynamic';
 
@@ -47,27 +47,14 @@ function sharePercent(part: number, whole: number): string {
   return `${Math.round(percent)}%`;
 }
 
-type Sized = { label: string; note: string; bytes: number };
-
-/** 큰 것부터 줄 세우고, 회색이 모자라면 나머지를 "그 밖" 한 조각으로 묶는다. */
-function toSlices(all: Sized[]): Sized[] {
-  const sorted = [...all].sort((a, b) => b.bytes - a.bytes);
-  if (sorted.length <= SHADES.length) return sorted;
-  const rest = sorted.slice(SHADES.length - 1);
-  return [...sorted.slice(0, SHADES.length - 1), {
-    label: '그 밖',
-    note: `${rest.length}가지`,
-    bytes: rest.reduce((sum, x) => sum + x.bytes, 0),
-  }];
-}
-
-/** 조각에 올렸을 때 뜨는 글 — 유형 · 갯수 · 용량 */
-function toPieSlices(rows: Sized[], whole: number): Slice[] {
-  return rows.map((row) => ({
-    label: row.label,
-    bytes: row.bytes,
-    tip: `${row.label} · ${row.note} · ${readableBytes(row.bytes)} · ${sharePercent(row.bytes, whole)}`,
-  }));
+/** 전체 대비 얼마나 찼는지. 0 이 아니면 아주 작아도 한 칸은 채운다 — 비어 있는 것과 조금 든 것은 다르다. */
+function Meter({ used, limit }: { used: number | null; limit: number }) {
+  const percent = used === null ? 0 : Math.min(100, (used / limit) * 100);
+  return (
+    <div className="meter" aria-hidden>
+      <div className="meter-fill" style={{ width: `${percent > 0 ? Math.max(percent, 1.5) : 0}%` }} />
+    </div>
+  );
 }
 
 export default async function AdminPage() {
@@ -99,18 +86,23 @@ export default async function AdminPage() {
     const seen = byFormat.get(mime) ?? { count: 0, bytes: 0 };
     byFormat.set(mime, { count: seen.count + 1, bytes: seen.bytes + Number(f.bytes ?? 0) });
   }
-  const fileSlices = toSlices([...byFormat.entries()].map(([mime, { count, bytes }]) => ({
+  const fileRows: Row[] = [...byFormat.entries()].map(([mime, { count, bytes }]) => ({
     label: `${KIND_LABEL[mime.split('/')[0]] ?? '그 밖'} ${formatName(mime)}`,
     note: `${count}개`,
     bytes,
-  })));
+  }));
 
-  // 빈 표는 빼고 나머지를 모두 원에 넣는다. 크기는 딸린 인덱스까지 더한 값이다.
+  // 빈 표는 뺀다. 크기는 딸린 인덱스까지 더한 값이고, 쿼리에 쓰는 영문 이름을 함께 적는다.
   type Table = { name: string; rows: number; bytes: number };
-  const tableSlices = toSlices(((tables ?? []) as Table[])
+  const tableRows: Row[] = ((tables ?? []) as Table[])
     .filter((t) => t.rows > 0)
-    .map((t) => ({ label: TABLE_LABEL[t.name] ?? t.name, note: `${t.rows}행`, bytes: Number(t.bytes ?? 0) })));
-  const tableTotal = tableSlices.reduce((sum, t) => sum + t.bytes, 0);
+    .map((t) => ({
+      label: TABLE_LABEL[t.name] ?? t.name,
+      query: t.name,
+      note: `${t.rows}행`,
+      bytes: Number(t.bytes ?? 0),
+    }));
+  const tableTotal = tableRows.reduce((sum, t) => sum + t.bytes, 0);
 
   return (
     <main className="page">
@@ -142,14 +134,8 @@ export default async function AdminPage() {
               <span className="meta-label">Supabase</span>
               <div className="storage-use">
                 <p className="display">{dbBytes === null ? '—' : sharePercent(dbBytes, DB_LIMIT)}</p>
-                {/* 왼쪽 원은 얼마나 찼는지, 오른쪽 원에는 표가 모두 들어 있다 — 아래 목록이 그 범례다 */}
-                <StoragePies
-                  ratio={dbBytes === null ? 0 : dbBytes / DB_LIMIT}
-                  useTip={dbBytes === null
-                    ? '쓴 양을 읽지 못했다'
-                    : `${readableBytes(dbBytes)} / ${readableBytes(DB_LIMIT)} · ${readableBytes(DB_LIMIT - dbBytes)} 남음`}
-                  slices={toPieSlices(tableSlices, tableTotal)} />
               </div>
+              <Meter used={dbBytes} limit={DB_LIMIT} />
               <p className="meta-value">
                 {dbBytes === null
                   ? `쓴 양을 읽지 못했다 · 전체 ${readableBytes(DB_LIMIT)}`
@@ -157,30 +143,15 @@ export default async function AdminPage() {
               </p>
               <p className="meta-value">기술(더블린코어)이 사는 곳</p>
 
-              {tableSlices.length > 0 && (
-                <ul className="storage-rows">
-                  {tableSlices.map((t, i) => (
-                    <li key={t.label}>
-                      <span className="swatch" style={{ background: SHADES[i] }} aria-hidden />
-                      <span className="meta-label">{t.label}</span>
-                      <span className="meta-value">{t.note}</span>
-                      <span className="meta-value storage-share">{sharePercent(t.bytes, tableTotal)}</span>
-                      <span className="meta-value storage-bytes">{readableBytes(t.bytes)}</span>
-                    </li>
-                  ))}
-                </ul>
-              )}
+              {tableRows.length > 0 && <StorageRows rows={tableRows} whole={tableTotal} />}
             </li>
 
             <li className="card">
               <span className="meta-label">Google Drive</span>
               <div className="storage-use">
                 <p className="display">{sharePercent(driveBytes, DRIVE_LIMIT)}</p>
-                <StoragePies
-                  ratio={driveBytes / DRIVE_LIMIT}
-                  useTip={`${readableBytes(driveBytes)} / ${readableBytes(DRIVE_LIMIT)} · ${readableBytes(DRIVE_LIMIT - driveBytes)} 남음`}
-                  slices={toPieSlices(fileSlices, driveBytes)} />
               </div>
+              <Meter used={driveBytes} limit={DRIVE_LIMIT} />
               <p className="meta-value">
                 {readableBytes(driveBytes)} / {readableBytes(DRIVE_LIMIT)}
                 {' · '}{readableBytes(DRIVE_LIMIT - driveBytes)} 남음
@@ -188,20 +159,10 @@ export default async function AdminPage() {
               <p className="meta-value">원본과 파생 {files?.length ?? 0}개</p>
 
               {/* 파일은 Drive 에 산다 — 형식 내역도 이 칸 안에 둔다 */}
-              {fileSlices.length === 0 ? (
+              {fileRows.length === 0 ? (
                 <p className="meta-value" style={{ marginTop: 'var(--space-4)' }}>아직 올린 파일이 없다.</p>
               ) : (
-                <ul className="storage-rows">
-                  {fileSlices.map((f, i) => (
-                    <li key={f.label}>
-                      <span className="swatch" style={{ background: SHADES[i] }} aria-hidden />
-                      <span className="meta-label">{f.label}</span>
-                      <span className="meta-value">{f.note}</span>
-                      <span className="meta-value storage-share">{sharePercent(f.bytes, driveBytes)}</span>
-                      <span className="meta-value storage-bytes">{readableBytes(f.bytes)}</span>
-                    </li>
-                  ))}
-                </ul>
+                <StorageRows rows={fileRows} whole={driveBytes} />
               )}
             </li>
           </ul>
