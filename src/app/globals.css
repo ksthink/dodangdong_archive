@@ -226,6 +226,28 @@ a:hover { text-decoration: underline; text-decoration-thickness: var(--stroke); 
   .storage-rows .storage-query { display: none; }
 }
 
+/* 분류 — 주제(두 층)와 장소를 한 줄씩 고친다. 줄마다 그 자리에서 저장하고 지운다.
+   열을 격자로 잡아야 단추가 아랫줄로 접히지 않는다. */
+.taxo { display: grid; gap: var(--space-2); margin-top: var(--space-4); }
+.taxo .is-nested { margin: var(--space-2) 0 var(--space-3) var(--space-6); }
+.taxo-row {
+  display: grid; align-items: center; gap: var(--space-2);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 48px auto auto;
+}
+.taxo-row.has-address { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) 48px auto auto; }
+.taxo-row .field { width: 100%; padding: var(--space-1) var(--space-2); }
+.taxo-count { text-align: right; }
+.taxo-button {
+  font: var(--text-meta-value); color: var(--ink); cursor: pointer; white-space: nowrap;
+  background: var(--paper); border: var(--stroke) solid var(--rule-strong); padding: var(--space-1) var(--space-2);
+}
+.taxo-button:hover { border-color: var(--ink); }
+.taxo-button[disabled] { color: var(--ink-muted); border-color: var(--rule); cursor: default; }
+@media (max-width: 719px) {
+  .taxo-row, .taxo-row.has-address { grid-template-columns: minmax(0, 1fr) 48px auto auto; }
+  .taxo-row .field:nth-of-type(n+2) { grid-column: 1 / -1; }
+}
+
 /* 등록·수정 양식 — 2열, 설명과 주제분류만 두 칸 폭 */
 .form { display: grid; grid-template-columns: 1fr; gap: var(--space-6); margin-top: var(--space-8); }
 @media (min-width: 760px) { .form { grid-template-columns: 1fr 1fr; } .form-field.span2 { grid-column: span 2; } }

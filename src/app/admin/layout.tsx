@@ -22,6 +22,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           <Link href="/admin/bundles">묶음</Link>
           <Link href="/admin/stories">이야기</Link>
           <Link href="/admin/people">인물</Link>
+          <Link href="/admin/taxonomy">분류</Link>
           <Link href="/admin/drive">GDRIVE</Link>
           <Link href="/">아카이브 보기</Link>
           <form action={signOut}><button type="submit" className="adminbar-out">나가기</button></form>
