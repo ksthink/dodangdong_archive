@@ -15,3 +15,21 @@ export function ilikeAny(columns: string[], raw: string): string | null {
   const quoted = `"${`%${like}%`.replace(/[\\"]/g, (m) => `\\${m}`)}"`;
   return columns.map((c) => `${c}.ilike.${quoted}`).join(',');
 }
+
+/**
+ * 띄어쓰기를 따지지 않는 맞춤. "혼례사진" 으로 「혼례 사진」 이 찾아지고 그 반대도 된다.
+ *
+ * 집안 기록은 띄어쓰기가 제각각이다 — 같은 사람이 쓴 글에서도 「도당동본가」 와
+ * 「도당동 본가」 가 섞인다. 찾는 사람이 그것까지 맞출 까닭이 없다.
+ * 대소문자도 따지지 않는다.
+ */
+export function loose(s: string | null | undefined): string {
+  return (s ?? '').toLowerCase().replace(/\s+/g, '');
+}
+
+/** 여러 칸 가운데 하나라도 띄어쓰기 없이 걸리면 참. 검색어가 비면 늘 참이다. */
+export function looseHit(needle: string, ...fields: (string | null | undefined)[]): boolean {
+  const q = loose(needle);
+  if (!q) return true;
+  return fields.some((f) => loose(f).includes(q));
+}
