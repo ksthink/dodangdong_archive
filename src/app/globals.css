@@ -58,6 +58,8 @@ a:hover { text-decoration: underline; text-decoration-thickness: var(--stroke); 
 .page { max-width: var(--page-max); margin: 0 auto; padding: var(--space-12) var(--space-4) var(--space-16); }
 @media (min-width: 900px) { .page { padding-inline: var(--space-16); } }
 .measure { max-width: var(--measure); }
+/* 들머리 문단: 본문보다 한 단 작게. 낱말이 줄 끝에서 끊기지 않게 하고 양끝을 맞춰 좌우가 고르게 한다 */
+main > p.measure { font: var(--text-body-sm); text-align: justify; word-break: keep-all; }
 .section { margin-top: var(--space-12); }
 .section-title {
   font: var(--text-heading);
