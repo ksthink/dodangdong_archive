@@ -1,7 +1,13 @@
 # 가상 시험 자료
 
 모든 기능을 시험하려고 넣은 **가상의** 인물·자료다. 실존 인물이나 실제 사건이 아니다
-(바깥 세상 사건만 실제 한국 현대사다). 운영 DB 에 들어가 있어 사이트에서 그대로 보인다.
+(바깥 세상 사건만 실제 한국 현대사다).
+
+**2026-09-27 에 DB 에서 모두 지웠다.** 실제 자료를 넣기 시작하려고, 시험 묶음 다섯과 그 자료
+52건, 인물 12명, 이야기 3편, 바깥 세상 12건, 하위 주제 8개, 가짜 장소 5곳, 시험 영상 1건
+("테스트합니다.")을 걷어냈다. 남긴 것은 DC-001 할머니의 전화번호부(빈 묶음), 도당동 본가,
+상위 주제 6개, 히어로 자리 셋이다. 채번은 DA-0001·DP-001 부터 다시 시작하고 묶음은 DC-002 다.
+Drive 쪽 파일은 `drive_orphans.py` 로 뒤따라 지운다(아래). 아래 설명은 다시 넣을 때를 위해 둔다.
 
 가짜 자료는 모두 제목이 ` (시험)` 으로 끝나는 가짜 묶음(DC-002 ~ DC-006)에 들어 있다.
 실제 자료(DC-001 할머니의 전화번호부, 도당동 본가, 상위 주제 6개)는 건드리지 않는다.
@@ -25,6 +31,7 @@ ADMIN_PASSWORD='…' python3 scripts/seed/fake_seed.py     # 인물·장소·주
 ADMIN_PASSWORD='…' python3 scripts/seed/fake_world.py    # 바깥 세상 12건
 ADMIN_PASSWORD='…' python3 scripts/seed/fake_cleanup.py  # 지울 것을 보여 주기만 한다(드라이런)
 ADMIN_PASSWORD='…' python3 scripts/seed/fake_cleanup.py --execute  # 실제로 지운다
+ADMIN_PASSWORD='…' python3 scripts/seed/drive_orphans.py            # 2026-09-27 정리 때 남은 Drive 파일·폴더
 ```
 
 - `ADMIN_PASSWORD` 는 관리자 비밀번호다. 어떤 파일에도 쓰지 않는다.
