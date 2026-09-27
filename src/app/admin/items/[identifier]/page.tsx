@@ -19,7 +19,7 @@ export default async function EditItemPage({
   searchParams: Promise<{ saved?: string; error?: string }>;
 }) {
   const { identifier } = await params;
-  const { saved, error } = await searchParams;
+  const { error } = await searchParams;
   const supabase = await createClient();
 
   const { data: item } = await supabase.from('item').select('*').eq('identifier', identifier).maybeSingle();
@@ -56,7 +56,6 @@ export default async function EditItemPage({
       <p className="meta-value">{identifier}</p>
       <h1 className="title">{item.title}</h1>
 
-      {saved && <p className="notice" role="status">{saved === 'transcript' ? '녹취록을 저장했다.' : '저장했다.'}</p>}
       {error && <p className="notice" role="alert">{error}</p>}
 
       <ItemForm

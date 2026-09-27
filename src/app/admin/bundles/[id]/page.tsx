@@ -16,7 +16,7 @@ export default async function EditBundlePage({
   searchParams: Promise<{ saved?: string; error?: string }>;
 }) {
   const { id } = await params;
-  const { saved, error } = await searchParams;
+  const { error } = await searchParams;
   const supabase = await createClient();
 
   const { data: bundle } = await supabase.from('bundle').select('*').eq('id', id).maybeSingle();
@@ -32,7 +32,6 @@ export default async function EditBundlePage({
     <main className="page">
       <p className="crumbs meta-value"><Link href="/admin/bundles">묶음</Link> &gt; {bundle.identifier}</p>
       <h1 className="title" style={{ marginTop: 'var(--space-2)' }}>{bundle.title}</h1>
-      {saved && <p className="notice" role="status">저장했다.</p>}
       {error && <p className="notice is-danger" role="alert">{error}</p>}
 
       <form action={save} className="form">

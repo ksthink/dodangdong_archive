@@ -44,7 +44,7 @@ export async function createBundle(form: FormData) {
     .from('bundle').insert(bundleFields(form)).select('id').single();
   if (error) throw new Error(`묶음을 만들지 못했다: ${error.message}`);
   revalidatePath('/admin/bundles');
-  redirect(`/admin/bundles/${data.id}`);
+  redirect(withQuery(`/admin/bundles/${data.id}`, { saved: '1' }));
 }
 
 export async function updateBundle(id: string, form: FormData) {

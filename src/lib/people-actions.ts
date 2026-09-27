@@ -46,7 +46,7 @@ export async function createPerson(form: FormData) {
   const { data, error } = await supabase.from('person').insert(personFields(form)).select('identifier').single();
   if (error) throw new Error(`인물을 저장하지 못했다: ${error.message}`);
   revalidatePath('/admin/people');
-  redirect(`/admin/people/${data.identifier}`);
+  redirect(withQuery(`/admin/people/${data.identifier}`, { saved: '1' }));
 }
 
 export async function updatePerson(identifier: string, form: FormData) {
@@ -86,6 +86,7 @@ export async function addLifePeriod(identifier: string, personId: string, form: 
   });
   if (error) throw new Error(`시기를 더하지 못했다: ${error.message}`);
   revalidatePath(`/admin/people/${identifier}`);
+  redirect(withQuery(`/admin/people/${identifier}`, { saved: '1' }));
 }
 
 export async function removeLifePeriod(identifier: string, periodId: string) {
@@ -117,6 +118,7 @@ export async function addRelation(identifier: string, personId: string, form: Fo
   const { error } = await supabase.from('person_relation').upsert(rows, { ignoreDuplicates: true });
   if (error) throw new Error(`관계를 잇지 못했다: ${error.message}`);
   revalidatePath(`/admin/people/${identifier}`);
+  redirect(withQuery(`/admin/people/${identifier}`, { saved: '1' }));
 }
 
 export async function removeRelation(identifier: string, from: string, to: string, kind: string) {

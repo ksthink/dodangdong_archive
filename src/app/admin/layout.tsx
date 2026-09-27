@@ -1,4 +1,6 @@
 import Link from 'next/link';
+import { Suspense } from 'react';
+import SavedPopup from '@/components/saved-popup';
 import { redirect } from 'next/navigation';
 import { getAdmin } from '@/lib/supabase/server';
 import { signOut } from '@/lib/auth-actions';
@@ -29,6 +31,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         </nav>
       </div>
       {children}
+      <Suspense fallback={null}><SavedPopup /></Suspense>
     </>
   );
 }

@@ -35,7 +35,7 @@ export default async function EditStoryPage({
   searchParams: Promise<{ saved?: string; error?: string; q?: string }>;
 }) {
   const { id } = await params;
-  const { saved, error, q } = await searchParams;
+  const { error, q } = await searchParams;
   const supabase = await createClient();
 
   const { data: story } = await supabase.from('collection').select('*').eq('id', id).eq('kind', 'story').maybeSingle();
@@ -61,7 +61,6 @@ export default async function EditStoryPage({
     <main className="page">
       <p className="meta-value"><Link href="/admin/stories">이야기</Link></p>
       <h1 className="title">{story.title}</h1>
-      {saved && <p className="notice" role="status">저장했다.</p>}
       {error && <p className="notice" role="alert">{error}</p>}
 
       <form action={save} className="form">

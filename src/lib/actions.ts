@@ -83,7 +83,7 @@ export async function createItem(form: FormData) {
   await supabase.from('event_log').insert({ item_id: data.id, action: 'create' });
 
   revalidatePath('/admin/items');
-  redirect(`/admin/items/${data.identifier}`);
+  redirect(withQuery(`/admin/items/${data.identifier}`, { saved: '1' }));
 }
 
 export async function updateItem(identifier: string, form: FormData) {

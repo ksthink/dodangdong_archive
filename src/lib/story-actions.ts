@@ -38,7 +38,7 @@ export async function createStory(form: FormData) {
     .from('collection').insert({ ...storyFields(form), kind: 'story' }).select('id').single();
   if (error) throw new Error(`이야기를 만들지 못했다: ${error.message}`);
   revalidatePath('/admin/stories');
-  redirect(`/admin/stories/${data.id}`);
+  redirect(withQuery(`/admin/stories/${data.id}`, { saved: '1' }));
 }
 
 export async function updateStory(id: string, form: FormData) {
@@ -121,6 +121,7 @@ export async function addBlock(storyId: string, form: FormData) {
     );
   }
   revalidatePath(`/admin/stories/${storyId}`);
+  redirect(withQuery(`/admin/stories/${storyId}`, { saved: '1' }));
 }
 
 /** ↑ ↓ — 이웃 블록과 자리를 바꾼다. */
@@ -147,6 +148,7 @@ export async function updateBlock(storyId: string, blockId: string, form: FormDa
     caption: text(form, 'caption'),
   }).eq('id', blockId);
   revalidatePath(`/admin/stories/${storyId}`);
+  redirect(withQuery(`/admin/stories/${storyId}`, { saved: '1' }));
 }
 
 export async function removeBlock(storyId: string, blockId: string) {

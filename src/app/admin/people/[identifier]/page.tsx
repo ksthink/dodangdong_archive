@@ -20,7 +20,7 @@ export default async function EditPersonPage({
   searchParams: Promise<{ saved?: string; error?: string }>;
 }) {
   const { identifier } = await params;
-  const { saved, error } = await searchParams;
+  const { error } = await searchParams;
   const supabase = await createClient();
 
   const { data: person } = await supabase.from('person').select('*').eq('identifier', identifier).maybeSingle();
@@ -71,7 +71,6 @@ export default async function EditPersonPage({
     <main className="page">
       <p className="meta-value">{identifier}</p>
       <h1 className="title">{person.display_name}</h1>
-      {saved && <p className="notice" role="status">저장했다.</p>}
       {error && <p className="notice" role="alert">{error}</p>}
 
       <PersonForm action={save} person={person} submitLabel="고친 것 저장" />

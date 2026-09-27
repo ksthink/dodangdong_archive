@@ -16,7 +16,7 @@ export default async function HeroSchedulePage({
 }: {
   searchParams: Promise<{ saved?: string; error?: string }>;
 }) {
-  const { saved, error } = await searchParams;
+  const { error } = await searchParams;
   const supabase = await createClient();
   const today = todayKST();
 
@@ -36,7 +36,6 @@ export default async function HeroSchedulePage({
         편성이 비었거나 기간이 지난 자리는 “오늘, N년 전”이, 그것도 없으면 가장 최근 이야기가 채운다.
         자동으로 넘기지 않는다. 오늘은 <span className="meta-value">{today}</span>(한국 날짜)이다.
       </p>
-      {saved && <p className="notice" role="status">자리 {saved} 편성을 저장했다.</p>}
       {error && <p className="notice" role="alert">{error}</p>}
 
       <section className="section">

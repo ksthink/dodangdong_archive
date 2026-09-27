@@ -183,6 +183,10 @@ main > p.measure { font: var(--text-body-sm); text-align: justify; word-break: k
 .window-body { padding: var(--space-6); display: grid; gap: var(--space-2); }
 .label { font: var(--text-meta-label); letter-spacing: var(--text-meta-label-tracking); text-transform: uppercase; color: var(--ink-muted); margin-top: var(--space-3); }
 .notice { border: var(--stroke-heavy) solid var(--ink); padding: var(--space-3) var(--space-4); font: var(--text-body-sm); }
+/* 등록·수정 팝업. 화면 오른쪽 아래에 떠서 스크롤과 상관없이 보인다. 4초 뒤 스스로 닫힌다 */
+.saved-popup { position: fixed; right: var(--space-4); bottom: var(--space-4); z-index: 50; display: flex; align-items: center; gap: var(--space-4);
+  background: var(--paper); color: var(--ink); border: var(--stroke-heavy) solid var(--ink); box-shadow: var(--shadow-pixel);
+  padding: var(--space-3) var(--space-4); font: var(--text-body-sm); }
 .button[disabled] { color: var(--ink-muted); border-color: var(--rule); background: var(--paper); box-shadow: none; cursor: default; }
 
 /* 관리 띠 — 관리 화면임을 알리는 유일한 표시 */

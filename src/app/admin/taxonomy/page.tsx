@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic';
 type Params = { searchParams: Promise<{ saved?: string; deleted?: string; error?: string }> };
 
 export default async function TaxonomyPage({ searchParams }: Params) {
-  const { saved, deleted, error } = await searchParams;
+  const { deleted, error } = await searchParams;
   const supabase = await createClient();
 
   const [{ data: subjects }, { data: places }, { data: used }, { data: placed }] = await Promise.all([
@@ -36,7 +36,6 @@ export default async function TaxonomyPage({ searchParams }: Params) {
         자료에 붙일 말을 미리 정해 두는 곳이다. 주제는 한 자료에 여럿 붙고 두 층까지 둘 수 있다.
         장소는 자료 하나에 한 곳이고, 집안에서 부르던 이름으로 적는다.
       </p>
-      {saved && <p className="notice" role="status">「{saved}」 을(를) 저장했다.</p>}
       {deleted && <p className="notice" role="status">「{deleted}」 을(를) 지웠다.</p>}
       {error && <p className="notice is-danger" role="alert">{error}</p>}
 
