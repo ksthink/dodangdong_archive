@@ -33,7 +33,7 @@ export default function SavedPopup() {
   if (!open) return null;
   return (
     <div className="saved-popup" role="status">
-      <span>저장 혹은 수정 됐습니다</span>
+      <span>저장(수정) 완료</span>
       <button type="button" className="button" onClick={() => setClosed(seen)}>닫기</button>
     </div>
   );
