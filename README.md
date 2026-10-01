@@ -38,7 +38,8 @@
 | `/admin/people` | 인물, 인생 시기, 가족 관계(부모·배우자) |
 | `/admin/stories` | 이야기 편집(블록 추가·순서·공개 범위) |
 | `/admin/hero` | 첫 화면 히어로 편성 |
-| `/admin/drive` | Google Drive 연결 |
+| `/admin/taxonomy` | 설정 > 분류. 주제분류와 장소 |
+| `/admin/drive` | 설정 > GDRIVE. Google Drive 연결 |
 
 ### 기능별 규칙
 

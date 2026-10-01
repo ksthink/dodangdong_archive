@@ -194,6 +194,12 @@ main > p.measure { font: var(--text-body-sm); text-align: justify; word-break: k
 .adminbar-mode { background: var(--on-ink); color: var(--ink); padding: 0 var(--space-1); font: var(--text-pixel-label); }
 .adminbar-nav { display: flex; align-items: center; gap: var(--space-4); margin-left: auto; }
 .adminbar-out { background: none; border: var(--stroke) solid var(--on-ink); color: var(--on-ink); font: var(--text-body-sm); padding: 0 var(--space-2); cursor: pointer; }
+/* 설정 탭 — 관리 띠 바로 아래의 둘째 띠. 고른 탭만 먹색으로 뒤집는다 */
+.subbar { display: flex; align-items: stretch; gap: var(--space-1); padding: 0 var(--space-4); background: var(--paper-sunken); border-bottom: var(--stroke) solid var(--ink); font: var(--text-body-sm); }
+.subbar-title { display: flex; align-items: center; margin-right: var(--space-3); font: var(--text-pixel-label); color: var(--ink-muted); }
+.subbar-tab { padding: var(--space-2) var(--space-4); text-decoration: none; white-space: nowrap; }
+.subbar-tab:hover { text-decoration: underline; }
+.subbar-tab.is-on { background: var(--ink); color: var(--on-ink); text-decoration: none; }
 
 /* 저장소 — 얼마나 찼는지. 전체 비중은 테 두른 빈 칸에 먹색을 채운 막대다 */
 .storage-grid { display: grid; gap: var(--space-6); grid-template-columns: 1fr; }

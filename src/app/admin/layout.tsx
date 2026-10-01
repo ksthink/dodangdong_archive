@@ -24,8 +24,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           <Link href="/admin/bundles">묶음</Link>
           <Link href="/admin/stories">이야기</Link>
           <Link href="/admin/people">인물</Link>
-          <Link href="/admin/taxonomy">분류</Link>
-          <Link href="/admin/drive">GDRIVE</Link>
+          {/* 분류와 GDRIVE 는 설정 안의 탭이다. 첫 탭으로 들어간다 */}
+          <Link href="/admin/taxonomy">설정</Link>
           <Link href="/">아카이브 보기</Link>
           <form action={signOut}><button type="submit" className="adminbar-out">나가기</button></form>
         </nav>
