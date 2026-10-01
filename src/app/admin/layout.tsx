@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { Suspense } from 'react';
 import SavedPopup from '@/components/saved-popup';
+import AdminNav from '@/components/admin-nav';
 import { redirect } from 'next/navigation';
 import { getAdmin } from '@/lib/supabase/server';
 import { signOut } from '@/lib/auth-actions';
@@ -17,18 +18,9 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         {/* 딱지가 관리 첫 화면으로 가는 문이다 — 메뉴에 '관리' 를 따로 두지 않는다 */}
         <Link href="/admin" className="adminbar-mode">관리 모드</Link>
         <span>{admin.label}</span>
-        <nav className="adminbar-nav">
-          <Link href="/admin/hero">첫 화면</Link>
-          <Link href="/admin/items">자료 목록</Link>
-          <Link href="/admin/items/new">자료 등록</Link>
-          <Link href="/admin/bundles">묶음</Link>
-          <Link href="/admin/stories">이야기</Link>
-          <Link href="/admin/people">인물</Link>
-          {/* 분류와 GDRIVE 는 설정 안의 탭이다. 첫 탭으로 들어간다 */}
-          <Link href="/admin/taxonomy">설정</Link>
-          <Link href="/">아카이브 보기</Link>
+        <AdminNav>
           <form action={signOut}><button type="submit" className="adminbar-out">나가기</button></form>
-        </nav>
+        </AdminNav>
       </div>
       {children}
       <Suspense fallback={null}><SavedPopup /></Suspense>

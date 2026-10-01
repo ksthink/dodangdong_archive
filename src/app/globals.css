@@ -190,14 +190,18 @@ main > p.measure { font: var(--text-body-sm); text-align: justify; word-break: k
 .button[disabled] { color: var(--ink-muted); border-color: var(--rule); background: var(--paper); box-shadow: none; cursor: default; }
 
 /* 관리 띠 — 관리 화면임을 알리는 유일한 표시 */
-.adminbar { background: var(--ink); color: var(--on-ink); display: flex; align-items: center; gap: var(--space-4); padding: var(--space-3) var(--space-4); font: var(--text-body-sm); }
-.adminbar-mode { background: var(--on-ink); color: var(--ink); padding: 0 var(--space-1); font: var(--text-pixel-label); }
-.adminbar-nav { display: flex; align-items: center; gap: var(--space-4); margin-left: auto; }
+/* 띠의 위아래 여백은 메뉴가 진다 — 고른 메뉴의 흰 바탕이 띠 아래 끝까지 닿아야 서브바와 이어진다 */
+.adminbar { background: var(--ink); color: var(--on-ink); display: flex; align-items: center; gap: var(--space-4); padding: 0 var(--space-4); font: var(--text-body-sm); }
+.adminbar-mode { background: var(--on-ink); color: var(--ink); padding: 0 var(--space-1); font: var(--text-pixel-label); white-space: nowrap; }
+.adminbar > span { white-space: nowrap; }
+.adminbar-nav { display: flex; align-items: stretch; flex-wrap: wrap; justify-content: flex-end; margin-left: auto; }
+.adminbar-nav > a { padding: var(--space-3) var(--space-2); white-space: nowrap; }
+.adminbar-nav > a.is-on { background: var(--on-ink); color: var(--ink); text-decoration: none; }
+.adminbar-nav > form { display: flex; align-items: center; margin-left: var(--space-2); }
 .adminbar-out { background: none; border: var(--stroke) solid var(--on-ink); color: var(--on-ink); font: var(--text-body-sm); padding: 0 var(--space-2); cursor: pointer; }
-/* 설정 탭 — 관리 띠 바로 아래의 둘째 띠. 고른 탭만 먹색으로 뒤집는다 */
-.subbar { display: flex; align-items: stretch; gap: var(--space-1); padding: 0 var(--space-4); background: var(--paper-sunken); border-bottom: var(--stroke) solid var(--ink); font: var(--text-body-sm); }
-.subbar-title { display: flex; align-items: center; margin-right: var(--space-3); font: var(--text-pixel-label); color: var(--ink-muted); }
-.subbar-tab { padding: var(--space-2) var(--space-4); text-decoration: none; white-space: nowrap; }
+/* 설정 탭 — 관리 띠 바로 아래의 둘째 띠. 관리 띠에서 뒤집힌 '설정' 과 같은 흰 바탕이라 한 덩이로 읽힌다 */
+.subbar { display: flex; justify-content: center; gap: var(--space-1); padding: var(--space-2) var(--space-4); background: var(--on-ink); border-bottom: var(--stroke) solid var(--ink); font: var(--text-body-sm); }
+.subbar-tab { padding: 0 var(--space-4); text-decoration: none; white-space: nowrap; }
 .subbar-tab:hover { text-decoration: underline; }
 .subbar-tab.is-on { background: var(--ink); color: var(--on-ink); text-decoration: none; }
 

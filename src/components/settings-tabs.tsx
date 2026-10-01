@@ -13,7 +13,6 @@ export default function SettingsTabs() {
   const path = usePathname();
   return (
     <nav className="subbar" aria-label="설정">
-      <span className="subbar-title">설정</span>
       {TABS.map((t) => {
         const on = path === t.href || path.startsWith(`${t.href}/`);
         return (
