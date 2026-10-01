@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
 import { TYPE_LABEL } from '@/lib/labels';
-import { ilikeAny } from '@/lib/search';
+import { looseHit } from '@/lib/search';
 import { thumbsFor } from '@/lib/thumbs';
 import Thumb from '@/components/thumb';
 import SiteHeader from '@/components/site-header';
@@ -29,62 +29,96 @@ export default async function SearchPage({
     ? await supabase.from('bundle').select('id, identifier, title').eq('identifier', params.bundle).maybeSingle()
     : { data: null };
 
-  // 인물로 좁힐 때는 그 사람이 걸린 자료 id 를 먼저 받는다.
-  // 이음표를 select 에 끼우면(!inner) 타입 추론이 깨지고, 어차피 자료가 100건 대다.
-  const pickedItems = person
-    ? ((await supabase.from('item_person').select('item_id, person!inner(identifier)')
-        .eq('person.identifier', person)).data ?? []).map((r) => r.item_id)
-    : null;
-
+  // 이 범위(전체 또는 묶음 하나)의 자료를 모두 받아 여기서 거른다. 자료가 100건 대이고,
+  // 검색어가 걸린 사람·장소의 이름까지 봐야 하는데 그것은 item 표의 칸이 아니기 때문이다.
   // 비공개 자료는 RLS 가 행 자체를 주지 않는다 — 여기서 따로 거르지 않는다.
-  let query = supabase
-    .from('item')
-    .select('id, identifier, title, type, doc_type, description, created_edtf, date_verified, source')
-    .order('created_start', { ascending: true, nullsFirst: false })
-    .limit(100);
-  if (type) query = query.eq('type', type);
-  if (params.bundle) query = query.eq('bundle_id', bundle?.id ?? '00000000-0000-0000-0000-000000000000');
-  if (year === 'none') query = query.is('created_start', null);
-  else if (year?.endsWith('s')) {
-    const from = Number(year.slice(0, 4));
-    query = query.gte('created_start', `${from}-01-01`).lte('created_start', `${from + 9}-12-31`);
-  } else if (year) {
-    query = query.gte('created_start', `${year}-01-01`).lte('created_start', `${year}-12-31`);
-  }
-  // 아무 자료도 안 걸린 사람이면 빈 목록이 되게 한다(id 가 없는 in 은 전부를 주기 때문).
-  if (pickedItems) query = query.in('id', pickedItems.length ? pickedItems : ['00000000-0000-0000-0000-000000000000']);
-  if (q) {
-    const cond = ilikeAny(
-      ['title', 'description', 'creator', 'source', 'doc_type', 'created_edtf', 'identifier'], q);
-    // 쓸 만한 글자가 없는 검색어("*")는 전부가 아니라 아무것도 아닌 것으로 본다.
-    query = cond ? query.or(cond) : query.eq('identifier', '');
-  }
+  const select = 'id, identifier, title, type, doc_type, description, creator, contributor, source,'
+    + ' created_edtf, created_start, date_verified, place(family_name, admin_name)';
+  const base = supabase.from('item').select(select)
+    .order('created_start', { ascending: true, nullsFirst: false });
+  const { data: all } = params.bundle
+    ? await base.eq('bundle_id', bundle?.id ?? '00000000-0000-0000-0000-000000000000')
+    : await base;
 
-  // 분류의 건수는 검색어·분류와 무관하게 "이 범위에 무엇이 얼마나 있는지" 를 말한다.
-  const scope = bundle
-    ? supabase.from('item').select('id, type, created_start').eq('bundle_id', bundle.id)
-    : supabase.from('item').select('id, type, created_start');
-  const [{ data: items }, { data: all }] = await Promise.all([query, scope]);
+  type Place = { family_name: string; admin_name: string | null };
+  type Row = {
+    id: string; identifier: string; title: string; type: string; doc_type: string | null;
+    description: string | null; creator: string | null; contributor: string | null;
+    source: string | null; created_edtf: string | null; created_start: string | null;
+    date_verified: boolean; place: Place | Place[] | null;
+  };
+  const rows = (all ?? []) as unknown as Row[];
 
-  // 인물 분류 — 이 범위의 자료에 걸린 사람과 건수. RLS 가 못 볼 사람은 애초에 주지 않는다.
-  const { data: links } = (all ?? []).length
+  // 자료에 걸린 사람. RLS 가 못 볼 사람은 애초에 주지 않는다.
+  const { data: links } = rows.length
     ? await supabase.from('item_person')
-      .select('item_id, person!inner(identifier, display_name)')
-      .in('item_id', (all ?? []).map((i) => i.id))
+      .select('item_id, person!inner(identifier, display_name, short_name, real_name, aliases)')
+      .in('item_id', rows.map((i) => i.id))
     : { data: [] };
 
-  const thumbs = await thumbsFor(supabase, (items ?? []).map((i) => i.id));
+  type Person = {
+    identifier: string; display_name: string; short_name: string | null;
+    real_name: string | null; aliases: string[] | null;
+  };
+  type Link2 = { item_id: string; person: Person | Person[] };
+  const peopleOf = new Map<string, Person[]>();
+  const names = new Map<string, string>();
+  for (const row of (links ?? []) as unknown as Link2[]) {
+    const p = Array.isArray(row.person) ? row.person[0] : row.person;
+    if (!p) continue;
+    names.set(p.identifier, p.display_name);
+    // 한 사람이 한 자료에 두 역할로 걸려도 한 번만 센다.
+    const list = peopleOf.get(row.item_id) ?? [];
+    if (!list.some((x) => x.identifier === p.identifier)) list.push(p);
+    peopleOf.set(row.item_id, list);
+  }
 
+  const yearOf = (v: string | null) => (v ? Number(v.slice(0, 4)) : null);
+
+  // 검색어는 낱말로 나눠 모두 걸려야 맞는 것으로 본다("할머니 1978").
+  // 낱말 하나는 글 칸이든 걸린 사람·장소의 이름이든 어디에 있어도 된다.
+  const words = q.split(/\s+/).filter(Boolean);
+  const hitQ = (it: Row) => {
+    const place = Array.isArray(it.place) ? it.place[0] : it.place;
+    const fields = [
+      it.title, it.description, it.creator, it.contributor, it.source, it.doc_type,
+      it.created_edtf, it.identifier, place?.family_name, place?.admin_name,
+      ...(peopleOf.get(it.id) ?? []).flatMap((p) => [
+        p.display_name, p.short_name, p.real_name, ...(p.aliases ?? []),
+      ]),
+    ];
+    return words.every((w) => looseHit(w, ...fields));
+  };
+  const hitType = (it: Row) => !type || it.type === type;
+  const hitYear = (it: Row) => {
+    if (!year) return true;
+    const y = yearOf(it.created_start);
+    if (year === 'none') return y === null;
+    if (y === null) return false;
+    const from = Number(year.slice(0, 4));
+    return year.endsWith('s') ? y >= from && y <= from + 9 : y === from;
+  };
+  const hitPerson = (it: Row) =>
+    !person || (peopleOf.get(it.id) ?? []).some((p) => p.identifier === person);
+
+  const found = rows.filter(hitQ);
+  const matched = found.filter((it) => hitType(it) && hitYear(it) && hitPerson(it));
+  const items = matched.slice(0, 100);
+
+  const thumbs = await thumbsFor(supabase, items.map((i) => i.id));
+
+  // 분류의 건수는 "이 줄을 누르면 몇 건이 나오는가" 를 말한다. 그래서 검색어와 다른 갈래의
+  // 조건은 걸고, 제 갈래의 조건만 풀어서 센다. 건수가 있는데 눌러 보면 비어 있는 일이 없게 한다.
+  const byType = found.filter((it) => hitYear(it) && hitPerson(it));
   const counts = new Map<string, number>();
-  for (const row of all ?? []) counts.set(row.type, (counts.get(row.type) ?? 0) + 1);
+  for (const row of byType) counts.set(row.type, (counts.get(row.type) ?? 0) + 1);
 
   // 연도 — 연대로 묶어 보여 주고, 고른 연대만 해별로 펼친다. 연도가 없는 자료도 한 줄 둔다.
-  const yearOf = (v: string | null) => (v ? Number(v.slice(0, 4)) : null);
   const decades = new Map<number, number>();
   const years = new Map<number, number>();
   let undated = 0;
-  for (const row of all ?? []) {
-    const y = yearOf(row.created_start as string | null);
+  for (const row of found.filter((it) => hitType(it) && hitPerson(it))) {
+    const y = yearOf(row.created_start);
     if (y === null) { undated += 1; continue; }
     years.set(y, (years.get(y) ?? 0) + 1);
     const d = Math.floor(y / 10) * 10;
@@ -93,16 +127,19 @@ export default async function SearchPage({
   const openDecade = year && year !== 'none'
     ? Math.floor(Number(year.slice(0, 4)) / 10) * 10
     : null;
+  // 고른 줄은 0건이어도 남긴다 — 사라지면 풀 길이 없다.
+  if (openDecade !== null && !decades.has(openDecade)) decades.set(openDecade, 0);
+  if (year && /^\d{4}$/.test(year) && !years.has(Number(year))) years.set(Number(year), 0);
 
-  // 인물 — 이 범위에서 몇 건에 걸렸는지. 많이 걸린 사람부터.
-  type Link2 = { item_id: string; person: { identifier: string; display_name: string } };
+  // 인물 — 몇 건에 걸렸는지. 많이 걸린 사람부터.
   const people = new Map<string, { name: string; n: number }>();
-  for (const row of (links ?? []) as unknown as Link2[]) {
-    const p = Array.isArray(row.person) ? row.person[0] : row.person;
-    if (!p) continue;
-    const seen = people.get(p.identifier) ?? { name: p.display_name, n: 0 };
-    people.set(p.identifier, { name: seen.name, n: seen.n + 1 });
+  for (const row of found.filter((it) => hitType(it) && hitYear(it))) {
+    for (const p of peopleOf.get(row.id) ?? []) {
+      const seen = people.get(p.identifier) ?? { name: p.display_name, n: 0 };
+      people.set(p.identifier, { name: seen.name, n: seen.n + 1 });
+    }
   }
+  if (person && !people.has(person)) people.set(person, { name: names.get(person) ?? person, n: 0 });
   const peopleRows = [...people.entries()].sort((a, b) => b[1].n - a[1].n);
 
   const href = (next: { q?: string | null; type?: string | null; year?: string | null; person?: string | null }) => {
@@ -142,7 +179,7 @@ export default async function SearchPage({
             <ul className="facets">
               <li>
                 <Link href={href({ type: null })} className={type ? 'facet' : 'facet is-on'}>
-                  <span>전체</span><span className="meta-value">{all?.length ?? 0}</span>
+                  <span>전체</span><span className="meta-value">{byType.length}</span>
                 </Link>
               </li>
               {Object.entries(TYPE_LABEL).map(([code, label]) => {
@@ -196,7 +233,7 @@ export default async function SearchPage({
                     </li>
                   );
                 })}
-                {undated > 0 && (
+                {(undated > 0 || year === 'none') && (
                   <li>
                     <Link href={href({ year: year === 'none' ? null : 'none' })}
                       className={year === 'none' ? 'facet is-on' : 'facet'}>
@@ -243,11 +280,11 @@ export default async function SearchPage({
                   type ? TYPE_LABEL[type] : null,
                   year === 'none' ? '연도 모름' : year?.endsWith('s') ? `${year.slice(0, 4)}년대` : year ? `${year}년` : null,
                   person ? people.get(person)?.name ?? person : null,
-                ].filter(Boolean).map((x) => `${x} · `).join('')}전체 {items?.length ?? 0}건
+                ].filter(Boolean).map((x) => `${x} · `).join('')}전체 {matched.length}건
               </span>
             </p>
 
-            {items?.length ? (
+            {items.length ? (
               <ul className="results">
                 {items.map((it) => (
                   <li key={it.identifier}>
