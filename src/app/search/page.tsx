@@ -30,10 +30,12 @@ export default async function SearchPage({
     : { data: null };
 
   // 이 범위(전체 또는 묶음 하나)의 자료를 모두 받아 여기서 거른다. 자료가 100건 대이고,
-  // 검색어가 걸린 사람·장소의 이름까지 봐야 하는데 그것은 item 표의 칸이 아니기 때문이다.
+  // 검색어가 걸린 사람·장소·주제·묶음의 이름까지 봐야 하는데 그것은 item 표의 칸이 아니기 때문이다.
   // 비공개 자료는 RLS 가 행 자체를 주지 않는다 — 여기서 따로 거르지 않는다.
-  const select = 'id, identifier, title, type, doc_type, description, creator, contributor, source,'
-    + ' created_edtf, created_start, date_verified, place(family_name, admin_name)';
+  const names4 = 'identifier, display_name, short_name, real_name, aliases';
+  const select = 'id, identifier, title, type, doc_type, description, creator, contributor, publisher, source,'
+    + ' created_edtf, created_start, date_verified, place(family_name, admin_name),'
+    + ` bundle(title, source), creator_person:creator_person_id(${names4}), item_subject(subject(label))`;
   const base = supabase.from('item').select(select)
     .order('created_start', { ascending: true, nullsFirst: false });
   const { data: all } = params.bundle
@@ -41,30 +43,37 @@ export default async function SearchPage({
     : await base;
 
   type Place = { family_name: string; admin_name: string | null };
+  type Person = {
+    identifier: string; display_name: string; short_name: string | null;
+    real_name: string | null; aliases: string[] | null;
+  };
+  type Subject = { label: string };
   type Row = {
     id: string; identifier: string; title: string; type: string; doc_type: string | null;
     description: string | null; creator: string | null; contributor: string | null;
     source: string | null; created_edtf: string | null; created_start: string | null;
+    publisher: string | null;
     date_verified: boolean; place: Place | Place[] | null;
+    bundle: { title: string; source: string | null } | { title: string; source: string | null }[] | null;
+    creator_person: Person | Person[] | null;
+    item_subject: { subject: Subject | Subject[] | null }[] | null;
   };
+  // 관계는 하나여도 배열로 올 수 있다. 첫 것만 쓴다.
+  const one = <T,>(v: T | T[] | null | undefined): T | null => (Array.isArray(v) ? v[0] : v) ?? null;
   const rows = (all ?? []) as unknown as Row[];
 
   // 자료에 걸린 사람. RLS 가 못 볼 사람은 애초에 주지 않는다.
   const { data: links } = rows.length
     ? await supabase.from('item_person')
-      .select('item_id, person!inner(identifier, display_name, short_name, real_name, aliases)')
+      .select(`item_id, person!inner(${names4})`)
       .in('item_id', rows.map((i) => i.id))
     : { data: [] };
 
-  type Person = {
-    identifier: string; display_name: string; short_name: string | null;
-    real_name: string | null; aliases: string[] | null;
-  };
   type Link2 = { item_id: string; person: Person | Person[] };
   const peopleOf = new Map<string, Person[]>();
   const names = new Map<string, string>();
   for (const row of (links ?? []) as unknown as Link2[]) {
-    const p = Array.isArray(row.person) ? row.person[0] : row.person;
+    const p = one(row.person);
     if (!p) continue;
     names.set(p.identifier, p.display_name);
     // 한 사람이 한 자료에 두 역할로 걸려도 한 번만 센다.
@@ -76,14 +85,19 @@ export default async function SearchPage({
   const yearOf = (v: string | null) => (v ? Number(v.slice(0, 4)) : null);
 
   // 검색어는 낱말로 나눠 모두 걸려야 맞는 것으로 본다("할머니 1978").
-  // 낱말 하나는 글 칸이든 걸린 사람·장소의 이름이든 어디에 있어도 된다.
+  // 낱말 하나는 글 칸이든 사람(등장인물·생산자)·장소·주제·묶음의 이름이든 어디에 있어도 된다.
+  // 자료 상세의 표에 보이는 말이면 그 말로 찾아져야 한다.
   const words = q.split(/\s+/).filter(Boolean);
   const hitQ = (it: Row) => {
-    const place = Array.isArray(it.place) ? it.place[0] : it.place;
+    const place = one(it.place);
+    const bundleOf = one(it.bundle);
+    const maker = one(it.creator_person);
     const fields = [
-      it.title, it.description, it.creator, it.contributor, it.source, it.doc_type,
-      it.created_edtf, it.identifier, place?.family_name, place?.admin_name,
-      ...(peopleOf.get(it.id) ?? []).flatMap((p) => [
+      it.title, it.description, it.creator, it.contributor, it.publisher, it.source, it.doc_type,
+      it.created_edtf, it.identifier, TYPE_LABEL[it.type], place?.family_name, place?.admin_name,
+      bundleOf?.title, bundleOf?.source,
+      ...(it.item_subject ?? []).map((s) => one(s.subject)?.label),
+      ...[...(peopleOf.get(it.id) ?? []), ...(maker ? [maker] : [])].flatMap((p) => [
         p.display_name, p.short_name, p.real_name, ...(p.aliases ?? []),
       ]),
     ];
